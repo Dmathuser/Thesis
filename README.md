@@ -14,6 +14,7 @@ Goals:
 - Create Datafile.
 
 TODO:
+- Step 1:
 - Load Simulation from file
 - Create Random Walk
 - Output Data in usable format
