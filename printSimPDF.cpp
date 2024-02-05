@@ -1,6 +1,9 @@
 
 #include <simulation.h>
 #include <fstream>
+#include <cstring>
+#include <cerrno>
+#include <cstdlib>
 
 using namespace std;
 
@@ -72,10 +75,13 @@ static void line(ofstream& fout,int x1,int y1,int x2,int y2)
 bool Simulation::printSimPDF(string outFileName)
 {
   string figFileName;
+  ofstream fout;
+  cout << figFileName << " to " << outFileName << endl;
 
   // Make sure filenames end in .pdf and .fig
-  if(outFileName.substr(outFileName.find_last_of('.'),outFileName.length()) == ".pdf")
-    figFileName=outFileName.substr(0,outFileName.find_last_of('.'))+".fig";
+  if((outFileName.find_last_of('.') != string::npos) &&
+     (outFileName.substr(outFileName.find_last_of('.'),4) == ".pdf"))
+    figFileName=outFileName.substr(0,outFileName.find_last_of('.'))+"fig";
   else
     {
       figFileName = outFileName+".fig";
@@ -86,8 +92,14 @@ bool Simulation::printSimPDF(string outFileName)
   
 // otherwise, create the fig file name by chopping of pdf and adding fig
   
-  ofstream fout(outFileName);
-
+  fout.open(figFileName);
+  if(!fout)
+    {
+      cerr << "printSimPDF() failed to open file '"<<figFileName<<
+	"' for output: " << strerror(errno) << '\n';
+      return 1;
+    }
+    
   figheader(fout);
   
   for (int j = 0; j < height; j++)
@@ -95,22 +107,37 @@ bool Simulation::printSimPDF(string outFileName)
       for (int i = 0; i < width; i++)
 	{
 	  // horizontal line on top
-	  line(fout,i*CELLSIZE,j*CELLSIZE,(i+1)*CELLSIZE,j*CELLSIZE);
+	  if(states[j][i].up == '-')
+	    line(fout,i*CELLSIZE,j*CELLSIZE,(i+1)*CELLSIZE,j*CELLSIZE);
 
 	  // horizontal line on bottom
-	  line(fout,i*CELLSIZE,(j+1)*CELLSIZE,(i+1)*CELLSIZE,(j+1)*CELLSIZE);
+	  if(states[j][i].down == '-')
+	    line(fout,i*CELLSIZE,(j+1)*CELLSIZE,(i+1)*CELLSIZE,(j+1)*CELLSIZE);
 	  
 	  // vertical line on left
-	  line(fout,i*CELLSIZE,j*CELLSIZE,i*CELLSIZE,(j+1)*CELLSIZE);
+	  if(states[j][i].left == '|')
+	    line(fout,i*CELLSIZE,j*CELLSIZE,i*CELLSIZE,(j+1)*CELLSIZE);
 
 	  // vertical line on right
-	  line(fout,(i+1)*CELLSIZE,j*CELLSIZE,(i+1)*CELLSIZE,(j+1)*CELLSIZE);
+	  if(states[j][i].right == '|')
+	    line(fout,(i+1)*CELLSIZE,j*CELLSIZE,(i+1)*CELLSIZE,(j+1)*CELLSIZE);
 	      
 	}
       std::cout << std::endl;
     }
   
   fout.close();
+
+  string convert_command = "fig2dev -L pdf "+figFileName+' '+outFileName;
+  
+  if(system(convert_command.c_str()) == -1)
+        {
+	  cerr << "printSimPDF() failed run 'fig2dev "<<figFileName<<"'  '" <<
+	    outFileName << "' : " << strerror(errno) << '\n';
+      return 1;
+    }
+
+  
   return true;
 }
 
