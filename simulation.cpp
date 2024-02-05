@@ -125,6 +125,7 @@ bool Simulation::readTile(int row, int col)
   // Store Agent if Valid.
   if (((value >> 8) & 1) != 0)
     states[row][col].agent = 'X';
+	/*
   std::cout << value << ", " << row << "," << col << std::endl;
   std::cout << (value >> 0 & 1) << ", ";
   std::cout << (value >> 1 & 1) << ", ";
@@ -134,6 +135,6 @@ bool Simulation::readTile(int row, int col)
   std::cout << states[row][col].down<< ", ";
   std::cout << states[row][col].left << ", ";
   std::cout << states[row][col].right << std::endl;
-	
+	*/
   return true;
 }
