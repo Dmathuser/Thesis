@@ -100,41 +100,41 @@ bool Simulation::printSimFancy()
 
 bool Simulation::readTile(int index)
 {
-	int value;
-	fin >> value;
-	states[index].stateVal = value;
-	// Store Walls
-	if ((value & 15) != 0) // If tile is wall (Any bits 1-4 true)
-		if (((value >> 0) & 1) != 0) // If Top tile is Wall (bit 1 is set)
-			states[index].up = '-';
-		if (((value >> 1) & 1) != 0) // If Bottom tile is Wall (bit 2 is set)
-			states[index].down = '-';
-		if (((value >> 2) & 1) != 0) // If Left tile is Wall (bit 3 is set)
-			states[index].left = '|';
-		if (((value >> 3) & 1) != 0) // If Right tile is Wall (bit 4 is set)
-			states[index].right = '|';
-	// Store Noisy-TV's Overwrite walls if necessary.
-	if ((value >> 4) & 15 != 0) // If tile is Noisy-TV (Any bits 5-8 true)
-		if (value >> 4 & 1 != 0) // If Top tile is Noisy-TV (bit 5 is set)
-			states[index].up = '^';
-		if (value >> 5 & 1 != 0) // If Bottom tile is Noisy-TV (bit 6 is set)
-			states[index].down = 'v';
-		if (value >> 6 & 1 != 0) // If Left tile is Noisy-TV (bit 7 is set)
-			states[index].left = '<';
-		if (value >> 7 & 1 != 0) // If Right tile is Noisy-TV (bit 8 is set)
-			states[index].right = '>';
-	// Store Agent if Valid.
-	if ((value >> 8) & 1 != 0)
-		states[index].agent = 'X';
-	std::cout << value << ", " << index << std::endl;
-	std::cout << (value >> 0 & 1) << ", ";
-	std::cout << (value >> 1 & 1) << ", ";
-	std::cout << (value >> 2 & 1) << ", ";
-	std::cout << (value >> 3 & 1) << ", " << std::endl;
-	std::cout << states[index].up << ", ";
-	std::cout << states[index].down<< ", ";
-	std::cout << states[index].left << ", ";
-	std::cout << states[index].right << std::endl;
+  int value;
+  fin >> value;
+  states[index].stateVal = value;
+  // Store Walls
+  if ((value & 0xF) != 0) // If tile is wall (Any bits 1-4 true)
+    if (((value >> 0) & 1) != 0) // If Top tile is Wall (bit 1 is set)
+      states[index].up = '-';
+  if (((value >> 1) & 1) != 0) // If Bottom tile is Wall (bit 2 is set)
+    states[index].down = '-';
+  if (((value >> 2) & 1) != 0) // If Left tile is Wall (bit 3 is set)
+    states[index].left = '|';
+  if (((value >> 3) & 1) != 0) // If Right tile is Wall (bit 4 is set)
+    states[index].right = '|';
+  // Store Noisy-TV's Overwrite walls if necessary.
+  if (((value >> 4) & 15) != 0) // If tile is Noisy-TV (Any bits 5-8 true)
+    if (((value >> 4) & 1) != 0) // If Top tile is Noisy-TV (bit 5 is set)
+      states[index].up = '^';
+  if (((value >> 5) & 1) != 0) // If Bottom tile is Noisy-TV (bit 6 is set)
+    states[index].down = 'v';
+  if (((value >> 6) & 1) != 0) // If Left tile is Noisy-TV (bit 7 is set)
+    states[index].left = '<';
+  if (((value >> 7) & 1) != 0) // If Right tile is Noisy-TV (bit 8 is set)
+    states[index].right = '>';
+  // Store Agent if Valid.
+  if (((value >> 8) & 1) != 0)
+    states[index].agent = 'X';
+  std::cout << value << ", " << index << std::endl;
+  std::cout << (value >> 0 & 1) << ", ";
+  std::cout << (value >> 1 & 1) << ", ";
+  std::cout << (value >> 2 & 1) << ", ";
+  std::cout << (value >> 3 & 1) << ", " << std::endl;
+  std::cout << states[index].up << ", ";
+  std::cout << states[index].down<< ", ";
+  std::cout << states[index].left << ", ";
+  std::cout << states[index].right << std::endl;
 	
-	return true;
+  return true;
 }
