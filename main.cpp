@@ -16,6 +16,7 @@ int main(int argc, char** argv)
 	Simulation sim = Simulation();
 	sim.initializeSim("TestSim.sim");
 	sim.printSim();
+	sim.printSimFancy();
 	// Set variables
 	// Epochs Loop (Loop once for each Episode)
 		// Episode Loop (Loop over time-steps t)
