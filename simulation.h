@@ -28,6 +28,7 @@ class Simulation {
 		bool initializeSim(std::string filename);
 		bool printSim();
 		bool printSimFancy();
+		bool printSimPDF();
 		bool readTile(int index);
 
 };
