@@ -20,7 +20,7 @@ class Simulation {
 		int width = 0;
 		int height = 0;
 		int numStates = 0;
-		state states[16]; //Change to dynamic states later
+		state **states; //Change to dynamic states later
 		std::ifstream fin;
 	public:
 		Simulation();
@@ -29,7 +29,7 @@ class Simulation {
 		bool printSim();
 		bool printSimFancy();
 		bool printSimPDF(std::string outFileName);
-		bool readTile(int index);
+		bool readTile(int row, int col);
 
 };
 

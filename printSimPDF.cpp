@@ -16,8 +16,8 @@ static void figheader(ofstream& fout)
   fout << "Letter\n";
   fout << "100.00\n";
   fout << "Single\n";
-  fout << "-2";
-  fout << "1200 2";
+  fout << "-2\n";
+  fout << "1200 2\n";
 }
 
 /*  The line() function emits a fig polyline.  From the Fig Format manual:
@@ -71,12 +71,20 @@ static void line(ofstream& fout,int x1,int y1,int x2,int y2)
 
 bool Simulation::printSimPDF(string outFileName)
 {
+  string figFileName;
 
-  // If last four chars of outFileName are not ".pdf", then create the fig and pdf strings.
-  string figfilename = outFileName+".fig";
-  outFileName += ".pdf";
+  // Make sure filenames end in .pdf and .fig
+  if(outFileName.substr(outFileName.find_last_of('.'),outFileName.length()) == ".pdf")
+    figFileName=outFileName.substr(0,outFileName.find_last_of('.'))+".fig";
+  else
+    {
+      figFileName = outFileName+".fig";
+      outFileName += ".pdf";
+    }
 
-  // otherwise, create the fig file name by chopping of pdf and adding fig
+  cout << figFileName << " to " << outFileName << endl;
+  
+// otherwise, create the fig file name by chopping of pdf and adding fig
   
   ofstream fout(outFileName);
 
