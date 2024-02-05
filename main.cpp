@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 	sim.initializeSim("TestSim.sim");
 	sim.printSim();
 	sim.printSimFancy();
-	sim.printSimPDF("TestSim.pdf");
+	sim.printSimPDF("TestSim"); //Currenly doesn't handle .pdf extensions
 	// Set variables
 	// Epochs Loop (Loop once for each Episode)
 		// Episode Loop (Loop over time-steps t)

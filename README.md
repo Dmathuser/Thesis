@@ -32,6 +32,9 @@ Thesis Project Created by David Mathews
 ## Step 4:
 - [] Data Gathering, Processing, and Graphing
 
+# BUGS
+- [] PDF output method doesn't handle .pdf extensions on input filenames.
+
 ## Simulation Details
 ### Simulation File Formatting
 - First Line: Width and Height separated by a single space

@@ -74,7 +74,7 @@ bool Simulation::printSimPDF(string outFileName)
 
   // If last four chars of outFileName are not ".pdf", then create the fig and pdf strings.
   string figfilename = outFileName+".fig";
-  outfilename += ".pdf";
+  outFileName += ".pdf";
 
   // otherwise, create the fig file name by chopping of pdf and adding fig
   
