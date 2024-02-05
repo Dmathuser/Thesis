@@ -8,6 +8,10 @@ Simulation::Simulation()
 
 Simulation::~Simulation()
 {
+  for(int i = 0;i < height; i++)
+    delete[] states[i];
+  delete[] states;
+  
 }
 
 bool Simulation::initializeSim(std::string filename)
@@ -24,10 +28,6 @@ bool Simulation::initializeSim(std::string filename)
 	fin >> height;
 	numStates = width * height;
 
-	states = new state*[height];
-	for(int i = 0;i < height; i++)
-	  states[i] = new state[width];
-
 	//Sanity Check
 	if (width <= 0 || height <= 0)
 	{
@@ -36,8 +36,9 @@ bool Simulation::initializeSim(std::string filename)
 	}
 
 	// Dynamically allocate memory for simulation state.
-	//states = new state(numStates);
-	//states = new int(numStates); //Fix to use dynamic allocation later.
+	states = new state*[height];
+	for(int i = 0;i < height; i++)
+	  states[i] = new state[width];
 
 	// Read in simulation from file.
 	for (int j = 0; j < height; j++)
