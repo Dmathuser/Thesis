@@ -5,6 +5,10 @@ Simulation::Simulation()
 {
 }
 
+Simulation::Simulation(std::string filename)
+{
+	initializeSim(filename);
+}
 
 Simulation::~Simulation()
 {
@@ -36,9 +40,9 @@ bool Simulation::initializeSim(std::string filename)
 	}
 
 	// Dynamically allocate memory for simulation state.
-	states = new state*[height];
+	states = new State*[height];
 	for(int i = 0;i < height; i++)
-	  states[i] = new state[width];
+	  states[i] = new State[width];
 
 	// Read in simulation from file.
 	for (int j = 0; j < height; j++)
@@ -47,10 +51,85 @@ bool Simulation::initializeSim(std::string filename)
 		{
 		        //Read in state value to state.
 		        readTile(j,i);
+						//states[j][i].stateIndex.x = i;
+						//states[j][i].stateIndex.y = j;
 			//fin >> states[height*j+i];
 			//std::cout << states[height*j+i] << "," << height*j+i << ", ";
 		}
 		//std::cout << std::endl;
+	}
+	if(connectStates())
+		return true;
+
+	std::cout << "ERROR: Unable to connect State Graph" << std::endl;
+	return false;
+}
+
+bool Simulation::isValidSim()
+{
+	// Check if upper and lower edges of sim have walls
+	for (int j = 0; j < height; j++)
+	{
+		if (isValidMove(states[j][0], LEFT))
+			return false;
+		if (isValidMove(states[j][width-1], RIGHT))
+			return false;
+	}
+	// Check if left and right edges of sim have walls
+	for (int i = 0; i < width; i++)
+	{
+		if (isValidMove(states[0][i], UP))
+			return false;
+		if (isValidMove(states[height-1][i], DOWN))
+			return false;
+	}
+	return true;
+}
+
+bool Simulation::connectStates()
+{
+	State *nextState;
+	State *curState;
+	//Check edges of simulation to guarantee walled edges.
+	if (!isValidSim())
+	{
+		std::cout << "ERROR: Simulation perimeter is missing walls." << std::endl;
+		return false;
+	}
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			curState = &states[j][i];
+			//if there is a wall, loop destination back to self
+			// Link Upper edge of state
+			if (!isValidMove(*curState, UP))
+				nextState = curState;
+			else //built in error checking, should never link an outer edge outwards
+				nextState = &states[j-1][i];
+			curState->upState = nextState;
+			
+			// Link Lower edge of state
+			if (!isValidMove(*curState, DOWN))
+				nextState = curState;
+			else //built in error checking, should never link an outer edge outwards
+				nextState = &states[j+1][i];
+			curState->upState = nextState;
+		
+			// Link Left edge of state
+			if (!isValidMove(*curState, LEFT))
+				nextState = curState;
+			else //built in error checking, should never link an outer edge outwards
+				nextState = &states[j][i-1];
+			curState->upState = nextState;
+	
+			// Link Right edge of state
+			if (!isValidMove(*curState, RIGHT))
+				nextState = curState;
+			else //built in error checking, should never link an outer edge outwards
+				nextState = &states[j][i+1];
+			curState->upState = nextState;
+		}
 	}
 	return true;
 }
@@ -137,4 +216,118 @@ bool Simulation::readTile(int row, int col)
   std::cout << states[row][col].right << std::endl;
 	*/
   return true;
+}
+
+// Returns pointer to first state with agent.
+// If no state with agent is found, returns nullptr.
+State* Simulation::getCurState()
+{
+	// Loop through states, return first state with valid agent.  
+  for (int j = 0; j < height; j++)
+		for (int i = 0; i < width; i++)
+			if (states[i][j].agent == AGENT_CHAR)
+				return &states[i][j];
+	return nullptr;
+}
+
+bool Simulation::setCurState(int stateIndex)
+{
+	// Find curent state if valid.
+	State* curState = getCurState();
+	// Remove curent agent from state.
+	if (curState != nullptr)
+		curState->agent = NO_AGENT_CHAR;
+
+	// Check for valid input state.
+	if (stateIndex < 0 || stateIndex >= numStates)
+		return false;
+
+	// Add agent to given state.
+	int column = stateIndex % height;
+	int row = stateIndex / height;
+	states[column][row].agent = AGENT_CHAR;
+	return true;
+}
+
+bool Simulation::moveState(Action a)
+{
+	// Find Current State if valid
+	State* curState = getCurState();
+	//Return if invalid state
+	if (curState == nullptr)
+		return false;
+	
+	// Check if move hits Noisy-TV
+	if (isNoisyMove(*curState, a))
+		noisy += 1; //SET TO RANDOM VARIABLE LATER.
+	
+	// Find Resulting New State, Move to State
+	switch (a)
+	{
+		case UP:
+			curState = curState->upState;
+		case DOWN:
+			curState = curState->downState;
+		case LEFT:
+			curState = curState->leftState;
+		case RIGHT:
+			curState = curState->rightState;
+		default:
+			return false;
+	}
+
+	return true; 
+}
+
+// Determines if given state s allows for movement in direction a.
+bool Simulation::isValidMove(State s, Action a)
+{
+	switch (a)
+	{
+		case UP:
+			if (s.up == NO_WALL)
+				return true;
+			break;
+		case DOWN:
+			if (s.down == NO_WALL)
+				return true;
+			break;
+		case LEFT:
+			if (s.left == NO_WALL)
+				return true;
+			break;
+		case RIGHT:
+			if (s.right == NO_WALL)
+				return true;
+			break;
+		default:
+			return false;
+	}
+	return false;
+}
+
+bool Simulation::isNoisyMove(State s, Action a)
+{
+	switch (a)
+	{
+		case UP:
+			if ((((s.stateVal >> 5) & 1) != 0))
+				return true;
+			break;
+		case DOWN:
+			if ((((s.stateVal >> 6) & 1) != 0))
+				return true;
+			break;
+		case LEFT:
+			if ((((s.stateVal >> 7) & 1) != 0))
+				return true;
+			break;
+		case RIGHT:
+			if ((((s.stateVal >> 8) & 1) != 0))
+				return true;
+			break;
+		default:
+			return false;
+	}
+	return false;
 }
