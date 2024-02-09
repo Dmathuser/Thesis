@@ -41,9 +41,9 @@ bool Simulation::initializeSim(std::string filename)
 	}
 
 	// Dynamically allocate memory for simulation state.
-	states = new State*[height];
+	states = new SimState*[height];
 	for(int i = 0;i < height; i++)
-	  states[i] = new State[width];
+	  states[i] = new SimState[width];
 
 	// Read in simulation from file.
 	for (int j = 0; j < height; j++)
@@ -90,8 +90,8 @@ bool Simulation::isValidSim()
 
 bool Simulation::connectStates()
 {
-	State *nextState;
-	State *curState;
+	SimState *nextState;
+	SimState *curState;
 	//Check edges of simulation to guarantee walled edges.
 	if (!isValidSim())
 	{
@@ -211,7 +211,7 @@ bool Simulation::printSimFancyConnections()
 	std::cout << width << " " << height << std::endl;
 	const char cornerChar = '+';
 	const int PLOT_WIDTH = 4;
-	State *curState;
+	SimState *curState;
 	for (int j = 0; j < height; j++)
 	{
 		for (int k = 0; k < 3; k++) //Loop through lines of printing
@@ -313,7 +313,7 @@ bool Simulation::readTile(int row, int col)
 
 // Returns pointer to first state with agent.
 // If no state with agent is found, returns nullptr.
-State* Simulation::getCurState()
+SimState* Simulation::getCurState()
 {
 	// Loop through states, return first state with valid agent.  
   for (int j = 0; j < height; j++)
@@ -323,10 +323,20 @@ State* Simulation::getCurState()
 	return nullptr;
 }
 
+int Simulation::getCurStateIndex()
+{
+	// Loop through states, return first state with valid agent.  
+  for (int j = 0; j < height; j++)
+		for (int i = 0; i < width; i++)
+			if (states[i][j].agent == AGENT_CHAR)
+				return j*height+i;
+	return -1;
+}
+
 bool Simulation::setCurState(int stateIndex)
 {
 	// Find curent state if valid.
-	State* curState = getCurState();
+	SimState* curState = getCurState();
 	// Remove curent agent from state.
 	if (curState != nullptr)
 		curState->agent = NO_AGENT_CHAR;
@@ -345,7 +355,7 @@ bool Simulation::setCurState(int stateIndex)
 bool Simulation::moveState(Action a)
 {
 	// Find Current State if valid
-	State* curState = getCurState();
+	SimState* curState = getCurState();
 	//Return if invalid state
 	if (curState == nullptr)
 		return false;
@@ -386,7 +396,7 @@ bool Simulation::moveState(Action a)
 }
 
 // Determines if given state s allows for movement in direction a.
-bool Simulation::isValidMove(State s, Action a)
+bool Simulation::isValidMove(SimState s, Action a)
 {
 	switch (a)
 	{
@@ -412,7 +422,7 @@ bool Simulation::isValidMove(State s, Action a)
 	return false;
 }
 
-bool Simulation::isNoisyMove(State s, Action a)
+bool Simulation::isNoisyMove(SimState s, Action a)
 {
 	switch (a)
 	{

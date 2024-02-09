@@ -5,7 +5,7 @@ LFLAGS=
 DEPENDFLAGS=-I. -M 
 DEFINES=
 
-OBJS=main.o simulation.o printSimPDF.o
+OBJS=main.o simulation.o printSimPDF.o policy.o randWalk.o
 
 EXEFILE=ThesisSim
 

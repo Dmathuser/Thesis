@@ -3,23 +3,24 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "enums.h"
 
 const char AGENT_CHAR = 'X';
 const char NO_AGENT_CHAR = ' ';
 const char BAD_INDEX = -1;
 const char NO_WALL = ' ';
 
-struct State
+struct SimState
 {
 	char up = NO_WALL;
 	char down = NO_WALL;
 	char left = NO_WALL;
 	char right = NO_WALL;
 	char agent = NO_AGENT_CHAR;
-	State* upState = nullptr;
-	State* downState = nullptr;
-	State* leftState = nullptr;
-	State* rightState = nullptr;
+	SimState* upState = nullptr;
+	SimState* downState = nullptr;
+	SimState* leftState = nullptr;
+	SimState* rightState = nullptr;
 	//Index stateIndex; //State Index in states array.
 	int stateIndex = -1;
 	int stateVal = 0; //Temp Variable that stores data in compact form.
@@ -31,7 +32,6 @@ struct Index
 	int y = -1; //Height Index
 };
 
-enum Action {UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3};
 
 class Simulation {
 	private:
@@ -39,7 +39,7 @@ class Simulation {
 		int height = 0;
 		int numStates = 0;
 		int noisy = 0;
-		State **states; //Dynamic Memory Allocation 
+		SimState **states; //Dynamic Memory Allocation 
 		std::ifstream fin;
 		bool readTile(int row, int col);
 		bool connectStates();
@@ -54,12 +54,12 @@ class Simulation {
 		bool printSimFancyConnections();
 		bool printSimPDF(std::string outFileName);
 
-		//OLD VERSIONS BELOW
-		State* getCurState();
+		SimState* getCurState();
+		int getCurStateIndex();
 		bool setCurState(int stateIndex);
 		bool moveState(Action a);
-		bool isValidMove(State s, Action a);
-		bool isNoisyMove(State s, Action a);
+		bool isValidMove(SimState s, Action a);
+		bool isNoisyMove(SimState s, Action a);
 };
 
 #endif
