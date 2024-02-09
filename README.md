@@ -16,7 +16,7 @@ Thesis Project Created by David Mathews
 # TODO:
 ## Step 1:
 - [x] Load Simulation from file
-- [] Create Random Walk
+- [x] Create Random Walk
 - [] Output Data in usable format
 - [] Create Python Script to graph Data
 
