@@ -21,6 +21,7 @@ struct State
 	State* leftState = nullptr;
 	State* rightState = nullptr;
 	//Index stateIndex; //State Index in states array.
+	int stateIndex = -1;
 	int stateVal = 0; //Temp Variable that stores data in compact form.
 };
 
@@ -50,6 +51,7 @@ class Simulation {
 		bool initializeSim(std::string filename);
 		bool printSim();
 		bool printSimFancy();
+		bool printSimFancyConnections();
 		bool printSimPDF(std::string outFileName);
 
 		//OLD VERSIONS BELOW

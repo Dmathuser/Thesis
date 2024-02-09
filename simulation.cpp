@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include <iomanip>
 
 
 Simulation::Simulation()
@@ -51,6 +52,7 @@ bool Simulation::initializeSim(std::string filename)
 		{
 		        //Read in state value to state.
 		        readTile(j,i);
+						states[j][i].stateIndex = height*j+i;
 						//states[j][i].stateIndex.x = i;
 						//states[j][i].stateIndex.y = j;
 			//fin >> states[height*j+i];
@@ -114,23 +116,29 @@ bool Simulation::connectStates()
 				nextState = curState;
 			else //built in error checking, should never link an outer edge outwards
 				nextState = &states[j+1][i];
-			curState->upState = nextState;
+			curState->downState = nextState;
 		
 			// Link Left edge of state
 			if (!isValidMove(*curState, LEFT))
 				nextState = curState;
 			else //built in error checking, should never link an outer edge outwards
 				nextState = &states[j][i-1];
-			curState->upState = nextState;
+			curState->leftState = nextState;
 	
 			// Link Right edge of state
 			if (!isValidMove(*curState, RIGHT))
 				nextState = curState;
 			else //built in error checking, should never link an outer edge outwards
 				nextState = &states[j][i+1];
-			curState->upState = nextState;
+			curState->rightState = nextState;
+			//std::cout << "Center, Up, Down, Left, Right: " << curState->stateIndex;
+			//std::cout << ", " << curState->upState->stateIndex;
+			//std::cout << ", " << curState->downState->stateIndex;
+			//std::cout << ", " << curState->leftState->stateIndex;
+			//std::cout << ", " << curState->rightState->stateIndex << std::endl;
 		}
 	}
+	//printSimFancyConnections();
 	return true;
 }
 
@@ -155,6 +163,7 @@ bool Simulation::printSim()
 
 bool Simulation::printSimFancy()
 {
+	const bool PRINT_STATE_INDEX = false;
 	std::cout << width << " " << height << std::endl;
 	char cornerChar = '+';
 	for (int j = 0; j < height; j++)
@@ -164,13 +173,97 @@ bool Simulation::printSimFancy()
 			for (int i = 0; i < width; i++)
 			{
 				if (k == 0) //If printing top pad Output.
+				{
 					std::cout << cornerChar << states[j][i].up << cornerChar;
-				else if (k == 1) //If printing left.
-					std::cout << states[j][i].left << states[j][i].agent << states[j][i].right;
+				}
+				else if (k == 1) //If printing middle.
+				{	
+					std::cout << states[j][i].left; 
+
+					if (states[j][i].agent == AGENT_CHAR)
+					{
+						std::cout << states[j][i].agent; 
+					}
+					else if (PRINT_STATE_INDEX == true)
+					{
+						std::cout << states[j][i].stateIndex;
+					}
+					else 
+					{
+						std::cout << states[j][i].agent; 
+					}
+
+					std::cout << states[j][i].right;
+				}
 				else if (k == 2) //If printing bottom pad Output.
+				{
 					std::cout << cornerChar << states[j][i].down << cornerChar;
+				}
 			}
 			std::cout << std::endl;
+		}
+	}
+	return true;
+}
+
+bool Simulation::printSimFancyConnections()
+{
+	std::cout << width << " " << height << std::endl;
+	const char cornerChar = '+';
+	const int PLOT_WIDTH = 4;
+	State *curState;
+	for (int j = 0; j < height; j++)
+	{
+		for (int k = 0; k < 3; k++) //Loop through lines of printing
+		{
+			std::cout << "k: " << k << "  ";
+			for (int i = 0; i < width; i++)
+			{
+				//std::cout << "j: " << j << ", i: " << i << std::endl;
+				curState = &states[j][i];
+				//std::cout << "curState: " << curState << std::endl;
+				//std::cout << "Up, Down, Left, Right: " << curState->upState << ", "; 
+				//std::cout << curState->downState << ", ";
+				//std::cout << curState->leftState << ", ";
+				//std::cout << curState->rightState << ", " << std::endl;
+				std::cout << std::setw(PLOT_WIDTH);
+				if (k == 0) //If printing top pad Output.
+				{
+					if (curState->up != ' ') // If upward is a wall
+						std::cout << cornerChar << std::setw(PLOT_WIDTH) << 'n' << std::setw(PLOT_WIDTH) << cornerChar;
+					else
+						std::cout << cornerChar << std::setw(PLOT_WIDTH) << curState->upState->stateIndex << std::setw(PLOT_WIDTH) << cornerChar;
+				}
+				else if (k == 1) //If printing left.
+				{
+					//std::cout << "Test";
+					//std::cout << curState.leftState;
+					if (curState->left != ' ') // If left is a wall
+						std::cout << '[';
+					else
+						std::cout << curState->leftState->stateIndex;
+					std::cout << std::setw(PLOT_WIDTH);
+					if (curState->agent != ' ') // If center is agent
+						std::cout << curState->stateIndex;
+					else
+						std::cout << curState->stateIndex;
+					std::cout << std::setw(PLOT_WIDTH);
+					if (curState->right != ' ') // If right is a wall
+						std::cout << ']';
+					else
+						std::cout << curState->rightState->stateIndex;
+				}
+				else if (k == 2) //If printing bottom pad Output.
+				{
+					if (curState->down != ' ') // If upward is a wall
+						std::cout << cornerChar << std::setw(PLOT_WIDTH) << 'u' << std::setw(PLOT_WIDTH) << cornerChar;
+					else
+						std::cout << cornerChar << std::setw(PLOT_WIDTH) << curState->rightState->stateIndex << std::setw(PLOT_WIDTH) << cornerChar;
+				}
+			}
+			//std::cout << "Test";
+			std::cout << std::endl << std::endl;
+			//std::cout << "Test";
 		}
 	}
 	return true;
@@ -261,20 +354,33 @@ bool Simulation::moveState(Action a)
 	if (isNoisyMove(*curState, a))
 		noisy += 1; //SET TO RANDOM VARIABLE LATER.
 	
+	
+	//std::cout << "State ID before move: " << curState->stateIndex << std::endl;
 	// Find Resulting New State, Move to State
 	switch (a)
 	{
 		case UP:
+			curState->agent = NO_AGENT_CHAR;
 			curState = curState->upState;
+			break;
 		case DOWN:
+			curState->agent = NO_AGENT_CHAR;
 			curState = curState->downState;
+			break;
 		case LEFT:
+			curState->agent = NO_AGENT_CHAR;
 			curState = curState->leftState;
+			break;
 		case RIGHT:
+			curState->agent = NO_AGENT_CHAR;
 			curState = curState->rightState;
+			break;
 		default:
 			return false;
 	}
+	//std::cout << "State ID after move: " << curState->stateIndex << std::endl;
+	curState->agent = AGENT_CHAR;
+	//std::cout << "Successfully took move: " << a << std::endl;
 
 	return true; 
 }

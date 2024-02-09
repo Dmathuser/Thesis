@@ -28,7 +28,35 @@ void TestSim(string filename)
 	Simulation sim = Simulation();
 	sim.initializeSim(filename);
 	sim.printSim();
+	sim.printSimFancyConnections();
+
+	sim.setCurState(0);
 	sim.printSimFancy();
+
+	cout << "Move UP" << endl;
+	sim.moveState(UP);
+	sim.printSimFancy();
+	
+	cout << "Move DOWN" << endl;
+	sim.moveState(DOWN);
+	sim.printSimFancy();
+	
+	cout << "Move LEFT" << endl;
+	sim.moveState(LEFT);
+	sim.printSimFancy();
+	
+	cout << "Move RIGHT" << endl;
+	sim.moveState(RIGHT);
+	sim.printSimFancy();
+
+	cout << "Move LEFT" << endl;
+	sim.moveState(LEFT);
+	sim.printSimFancy();
+
+	cout << "Move UP" << endl;
+	sim.moveState(UP);
+	sim.printSimFancy();
+	
 	// Took this from printSimPDF.cpp. by Dr. Larry Pyeatt.
 	// Should remove .sim extension for output file name purposes.
   if((filename.find_last_of('.') != string::npos) &&
