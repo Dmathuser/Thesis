@@ -42,3 +42,12 @@ Thesis Project Created by David Mathews
   - Bits 1-4: Is there a wall in (Top[1], Bottom[2], Left[3], Right[4]). 1 if yes.
 	- Bits 5-8: Is there a Noisy TV Facing inwards in (Top[5], Bottom[6], Left[7], Right[8]) 1 if yes.
 	- Bit 9: Is the Agent in this state. 1 if yes.
+
+## Policy Details
+### Policy Functions
+- PickAction
+  - Picks an action based on internal model and current state
+- Update
+  - Updates internal model based on new s,a,s' transition.
+- UpdateBulk
+  - Update internal model repeatedly based on array of s,a,s' transitions.
