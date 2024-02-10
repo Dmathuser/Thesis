@@ -7,6 +7,8 @@ using namespace std;
 
 void TestSim(string filename);
 void TestPolicy(string filename, int seed);
+void printAction(Action a);
+StateTransition getSAS(State s, Action a, Simulation *sim);
 
 int main(int argc, char** argv)
 {
@@ -32,40 +34,50 @@ void TestPolicy(string filename, int seed)
 	sim.printSimFancy();
 	RandWalk policy = RandWalk(seed);
 	State s;
-	State sPrime;
 	Action a;
 	StateTransition sas;
 	for (int i = 0; i < episodeLength; i++)
 	{
 		a = policy.getAction(s);
 		sim.moveState(a);
-		sas.s = s;
-		sas.a = a;
-		sPrime.StateId = sim.getCurStateIndex(); //Get State ID for new state
-		sPrime.Noise = s.Noise; //Propegate Noise forward through states
-		sas.sPrime = sPrime; //Set next state for state Transition
+		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
 		policy.Update(sas);
-		switch (a)
-		{
-			case UP:
-				cout << ", UP";
-				break;
-			case DOWN:
-				cout << ", DOWN";
-				break;
-			case LEFT:
-				cout << ", LEFT";
-				break;
-			case RIGHT:
-				cout << ", RIGHT";
-				break;
-			default:
-				cout << ", BAD: " << a;
-		}
-		//Update s in time.
-		s = sPrime;
+		printAction(a);
+		//Take timestep, update s.
+		s = sas.sPrime;
 	}
 	cout << endl;
+}
+
+StateTransition getSAS(State s, Action a, Simulation *sim)
+{
+	StateTransition sas;
+	sas.s = s;
+	sas.a = a;
+	sas.sPrime.StateId = sim->getCurStateIndex(); //Get State ID for new state
+	sas.sPrime.Noise = s.Noise; //Propegate Noise forward through states
+	return sas;
+}
+
+void printAction(Action a)
+{
+	switch (a)
+	{
+		case UP:
+			cout << ", UP";
+			break;
+		case DOWN:
+			cout << ", DOWN";
+			break;
+		case LEFT:
+			cout << ", LEFT";
+			break;
+		case RIGHT:
+			cout << ", RIGHT";
+			break;
+		default:
+			cout << ", BAD: " << a;
+	}
 }
 
 void TestSim(string filename)
