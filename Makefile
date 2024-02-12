@@ -12,6 +12,10 @@ EXEFILE=ThesisSim
 $(EXEFILE) : $(OBJS)
 	$(CC) $(CFLAGS) -o $(EXEFILE) $(OBJS) $(LFLAGS)
 
+# to run full memory check, type "make memcheck"
+memtest: $(EXEFILE)
+	valgrind --leak-check=full --show-leak-kinds=all ./$(EXEFILE)
+
 # scan.yy.o: scan.yy.c 
 # 	$(CC) $(DEFINES) $(CFLAGS) -c $< 
 
@@ -32,6 +36,9 @@ $(EXEFILE) : $(OBJS)
 
 clean:
 	rm -f core* *.o $(EXEFILE) *~
+
+realclean: clean
+	rm -f .depend
 
 # make depend will create a file ".depend" with all the dependencies
 depend:

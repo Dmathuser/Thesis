@@ -15,8 +15,7 @@ Simulation::~Simulation()
 {
   for(int i = 0;i < height; i++)
     delete[] states[i];
-  delete[] states;
-  
+  delete[] states;  
 }
 
 bool Simulation::initializeSim(std::string filename)
@@ -60,6 +59,7 @@ bool Simulation::initializeSim(std::string filename)
 		}
 		//std::cout << std::endl;
 	}
+	fin.close();
 	if(connectStates())
 		return true;
 
@@ -318,8 +318,8 @@ SimState* Simulation::getCurState()
 	// Loop through states, return first state with valid agent.  
   for (int j = 0; j < height; j++)
 		for (int i = 0; i < width; i++)
-			if (states[i][j].agent == AGENT_CHAR)
-				return &states[i][j];
+			if (states[j][i].agent == AGENT_CHAR)
+				return states[j]+i;
 	return nullptr;
 }
 
@@ -328,8 +328,11 @@ int Simulation::getCurStateIndex()
 	// Loop through states, return first state with valid agent.  
   for (int j = 0; j < height; j++)
 		for (int i = 0; i < width; i++)
-			if (states[i][j].agent == AGENT_CHAR)
-				return j*height+i;
+			if (states[j][i].agent == AGENT_CHAR)
+			  {
+			    // std::cout << " getCurStateIndex: "<<j*width+i<<std::endl;
+				return j*width+i;
+			  }
 	return -1;
 }
 
@@ -346,9 +349,9 @@ bool Simulation::setCurState(int stateIndex)
 		return false;
 
 	// Add agent to given state.
-	int column = stateIndex % height;
-	int row = stateIndex / height;
-	states[column][row].agent = AGENT_CHAR;
+	int column = stateIndex % width;
+	int row = stateIndex / width;
+	states[row][column].agent = AGENT_CHAR;
 	return true;
 }
 

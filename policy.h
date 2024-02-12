@@ -16,15 +16,18 @@ struct StateTransition
 };
 
 class Policy {
+  int states,actions;
 	private:
 		// State states[NumStates][actions][LinkedListUpToNumStates, totNum];
-		int transitionCount[16][ACTION_SIZE][2];
+  		// int transitionCount[16][ACTION_SIZE][2];
+  int ***transitionCount;  // [# of states][ACTION_SIZE][2];
 
 
 		//vector<State> **states; //contains model of states. Expandable
 		// map (state, Transition);
 	public:
 		Policy();
+  Policy(int states, int actions);
 		~Policy();
 		virtual Action getAction(State s);
 		virtual void Update(StateTransition sas);
