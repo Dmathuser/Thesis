@@ -38,6 +38,7 @@ class Simulation {
 		int width = 0;
 		int height = 0;
 		int numStates = 0;
+   int numActions = 4; // ok, just hardcode it
 		int noisy = 0;
 		SimState **states; //Dynamic Memory Allocation 
 		std::ifstream fin;
@@ -56,6 +57,8 @@ class Simulation {
 
 		SimState* getCurState();
 		int getCurStateIndex();
+  int getNumStates(){return numStates;}
+  int getNumActions(){return numActions;}
 		bool setCurState(int stateIndex);
 		bool moveState(Action a);
 		bool isValidMove(SimState s, Action a);

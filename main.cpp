@@ -32,10 +32,11 @@ void TestPolicy(string filename, int seed)
 	Simulation sim = Simulation(filename);
 	sim.setCurState(5);
 	sim.printSimFancy();
-	RandWalk policy = RandWalk(seed);
-	State s;
+	RandWalk policy = RandWalk(seed,sim.getNumStates(),sim.getNumActions());
+	sim.setCurState(5);
+	State s = {5};
 	Action a;
-	StateTransition sas;
+	StateTransition sas = {0};  
 	for (int i = 0; i < episodeLength; i++)
 	{
 		a = policy.getAction(s);
@@ -51,7 +52,7 @@ void TestPolicy(string filename, int seed)
 
 StateTransition getSAS(State s, Action a, Simulation *sim)
 {
-	StateTransition sas;
+  StateTransition sas = {0};
 	sas.s = s;
 	sas.a = a;
 	sas.sPrime.StateId = sim->getCurStateIndex(); //Get State ID for new state
