@@ -12,14 +12,11 @@ Policy::Policy(int states, int actions)
 {
   this->states = states;
   this->actions = actions;
-  transitionCount = new int**[states];
+  transitionCount = new basearray<int,2> *[states];
   for(int i = 0; i < states; i++)
-    {
-      transitionCount[i] = new int*[actions];
-      for(int j=0;j<actions;j++)
-	transitionCount[i][j] = new int[2]{0,0};
-    }
-  std::cout << "Policy initialized with "<<states<<" states and "<<actions<<" actions.\n";
+    transitionCount[i] = new basearray<int,2>[actions];
+  // std::cout << "Policy initialized with " << states << " states and " <<
+  //   actions << " actions.\n";
 }
 
 
@@ -28,11 +25,7 @@ Policy::~Policy()
   if(transitionCount != NULL)
     {
       for(int i = 0; i < states; i++)
-	{
-	  for(int j=0;j<actions;j++)
-	    delete[] transitionCount[i][j];
-	  delete[] transitionCount[i];
-	}      
+        delete[] transitionCount[i];
       delete[] transitionCount;
     }
 }
