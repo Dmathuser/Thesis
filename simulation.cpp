@@ -1,9 +1,16 @@
 #include "simulation.h"
 #include <iomanip>
+#include <stdlib.h>
 
 
 Simulation::Simulation()
 {
+}
+
+Simulation::Simulation(int seed)
+{
+	seed = seed;
+	srand(seed); //Might be slow...
 }
 
 Simulation::Simulation(std::string filename)
@@ -374,19 +381,23 @@ bool Simulation::moveState(Action a)
 	{
 		case UP:
 			curState->agent = NO_AGENT_CHAR;
-			curState = curState->upState;
+			if (rand()%100 < 90)
+				curState = curState->upState;
 			break;
 		case DOWN:
 			curState->agent = NO_AGENT_CHAR;
-			curState = curState->downState;
+			if (rand()%100 < 90)
+				curState = curState->downState;
 			break;
 		case LEFT:
 			curState->agent = NO_AGENT_CHAR;
-			curState = curState->leftState;
+			if (rand()%100 < 90)
+				curState = curState->leftState;
 			break;
 		case RIGHT:
 			curState->agent = NO_AGENT_CHAR;
-			curState = curState->rightState;
+			if (rand()%100 < 90)
+				curState = curState->rightState;
 			break;
 		default:
 			return false;

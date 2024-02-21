@@ -6,18 +6,20 @@ Policy::Policy()
 {
   states=actions=0;
   transitionCount = NULL;
+	N = 0;
 }
 
 Policy::Policy(int states, int actions)
 {
   this->states = states;
   this->actions = actions;
+	this->N = states+1;
   transitionCount = new int**[states];
   for(int i = 0; i < states; i++)
     {
       transitionCount[i] = new int*[actions];
       for(int j=0;j<actions;j++)
-	transitionCount[i][j] = new int[2]{0,0};
+	transitionCount[i][j] = new int[N]{0,0};
     }
   std::cout << "Policy initialized with "<<states<<" states and "<<actions<<" actions.\n";
 }

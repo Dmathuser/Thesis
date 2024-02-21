@@ -2,6 +2,7 @@
 #include <iomanip>
 #include "simulation.h"
 #include "randWalk.h"
+#include "PIG.h"
 
 using namespace std;
 
@@ -28,11 +29,12 @@ int main(int argc, char** argv)
 
 void TestPolicy(string filename, int seed)
 {
-	int episodeLength = 100;
+	int episodeLength = 200;
 	Simulation sim = Simulation(filename);
 	sim.setCurState(5);
 	sim.printSimFancy();
-	RandWalk policy = RandWalk(seed,sim.getNumStates(),sim.getNumActions());
+	//RandWalk policy = RandWalk(seed,sim.getNumStates(),sim.getNumActions());
+	PIG_alg policy = PIG_alg(seed,sim.getNumStates(),sim.getNumActions());
 	sim.setCurState(5);
 	State s = {5};
 	Action a;
@@ -40,10 +42,11 @@ void TestPolicy(string filename, int seed)
 	for (int i = 0; i < episodeLength; i++)
 	{
 		a = policy.getAction(s);
+		printAction(a);
 		sim.moveState(a);
 		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
 		policy.Update(sas);
-		printAction(a);
+		//printAction(a);
 		//Take timestep, update s.
 		s = sas.sPrime;
 	}
