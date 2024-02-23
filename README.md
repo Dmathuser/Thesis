@@ -21,7 +21,7 @@ Thesis Project Created by David Mathews
 - [] Create Python Script to graph Data
 
 ## Step 2:
-- [] Work on PIG.
+- [x] Work on PIG.
 - [] Work on PIG++
 
 ## Step 3:
