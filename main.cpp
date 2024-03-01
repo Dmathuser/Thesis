@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include "simulation.h"
+#include "simLogger.h"
 #include "randWalk.h"
 #include "PIG.h"
 
@@ -29,16 +30,19 @@ int main(int argc, char** argv)
 
 void TestPolicy(string filename, int seed)
 {
-	int episodeLength = 200;
+	int episodeLength = 100;
 	Simulation sim = Simulation(filename);
 	sim.setCurState(5);
 	sim.printSimFancy();
+	//Setup Logger
+	SimLogger logger = SimLogger(&sim, sim.getSeed());
 	//RandWalk policy = RandWalk(seed,sim.getNumStates(),sim.getNumActions());
 	PIG_alg policy = PIG_alg(seed,sim.getNumStates(),sim.getNumActions());
 	sim.setCurState(5);
 	State s = {5};
 	Action a;
 	StateTransition sas = {0};  
+	logger.startLog();
 	for (int i = 0; i < episodeLength; i++)
 	{
 		a = policy.getAction(s);
@@ -51,6 +55,8 @@ void TestPolicy(string filename, int seed)
 		s = sas.sPrime;
 	}
 	cout << endl;
+	logger.stopLog();
+	logger.printSimLogs("SimLogs.txt");
 }
 
 StateTransition getSAS(State s, Action a, Simulation *sim)

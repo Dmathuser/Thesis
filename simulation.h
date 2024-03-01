@@ -4,13 +4,14 @@
 #include <fstream>
 #include <string>
 #include "enums.h"
+#include "structs.h"
 
 const char AGENT_CHAR = 'X';
 const char NO_AGENT_CHAR = ' ';
 const char BAD_INDEX = -1;
 const char NO_WALL = ' ';
 
-struct SimState
+struct SimState //Used in simulation
 {
 	char up = NO_WALL;
 	char down = NO_WALL;
@@ -25,13 +26,6 @@ struct SimState
 	int stateIndex = -1;
 	int stateVal = 0; //Temp Variable that stores data in compact form.
 };
-
-struct Index
-{
-	int x = -1; //Width Index
-	int y = -1; //Height Index
-};
-
 
 class Simulation {
 	private:
@@ -59,8 +53,9 @@ class Simulation {
 
 		SimState* getCurState();
 		int getCurStateIndex();
-  int getNumStates(){return numStates;}
-  int getNumActions(){return numActions;}
+  	int getNumStates(){return numStates;}
+  	int getNumActions(){return numActions;}
+  	int getSeed(){return seed;}
 		bool setCurState(int stateIndex);
 		bool moveState(Action a);
 		bool isValidMove(SimState s, Action a);
