@@ -22,6 +22,12 @@ Simulation::~Simulation()
 {
   for(int i = 0;i < height; i++)
     delete[] states[i];
+  for(int s = 0;s < numStates; s++)
+	{
+  	for(int a = 0;a < numActions; a++)
+    	delete[] transitions[s][a];
+		delete[] transitions[s];
+	}
   delete[] states;  
 }
 
@@ -67,10 +73,13 @@ bool Simulation::initializeSim(std::string filename)
 		//std::cout << std::endl;
 	}
 	fin.close();
-	if(connectStates())
-		return true;
 
-	std::cout << "ERROR: Unable to connect State Graph" << std::endl;
+	if(connectStates())
+		if(createTransitionProbs())
+			return true;
+
+	std::cout << "ERROR: Unable to connect State Graph and Transitions"
+		<< std::endl;
 	return false;
 }
 
@@ -117,6 +126,8 @@ bool Simulation::connectStates()
 			else //built in error checking, should never link an outer edge outwards
 				nextState = &states[j-1][i];
 			curState->upState = nextState;
+			if(curState == nullptr)
+				std::cout << "ERROR curState(" << j << ", " << i << ") is NULL" << std::endl;
 			
 			// Link Lower edge of state
 			if (!isValidMove(*curState, DOWN))
@@ -125,6 +136,8 @@ bool Simulation::connectStates()
 				nextState = &states[j+1][i];
 			curState->downState = nextState;
 		
+			if(curState == nullptr)
+				std::cout << "ERROR curState(" << j << ", " << i << ") is NULL" << std::endl;
 			// Link Left edge of state
 			if (!isValidMove(*curState, LEFT))
 				nextState = curState;
@@ -132,20 +145,19 @@ bool Simulation::connectStates()
 				nextState = &states[j][i-1];
 			curState->leftState = nextState;
 	
+			if(curState == nullptr)
+				std::cout << "ERROR curState(" << j << ", " << i << ") is NULL" << std::endl;
 			// Link Right edge of state
 			if (!isValidMove(*curState, RIGHT))
 				nextState = curState;
 			else //built in error checking, should never link an outer edge outwards
 				nextState = &states[j][i+1];
 			curState->rightState = nextState;
-			//std::cout << "Center, Up, Down, Left, Right: " << curState->stateIndex;
-			//std::cout << ", " << curState->upState->stateIndex;
-			//std::cout << ", " << curState->downState->stateIndex;
-			//std::cout << ", " << curState->leftState->stateIndex;
-			//std::cout << ", " << curState->rightState->stateIndex << std::endl;
+			if(curState == nullptr)
+				std::cout << "ERROR curState(" << j << ", " << i << ") is NULL" << std::endl;
 		}
 	}
-	//printSimFancyConnections();
+	printSimFancyConnections();
 	return true;
 }
 
@@ -326,7 +338,7 @@ SimState* Simulation::getCurState()
   for (int j = 0; j < height; j++)
 		for (int i = 0; i < width; i++)
 			if (states[j][i].agent == AGENT_CHAR)
-				return states[j]+i;
+				return &states[j][i];
 	return nullptr;
 }
 
@@ -362,6 +374,89 @@ bool Simulation::setCurState(int stateIndex)
 	return true;
 }
 
+//REQUIRES CONNECTED states VARIABLE!!!
+const int TRANSITION_PROB = 90;
+const int STAY_PROB = 10;
+const int TOTAL_PROB = TRANSITION_PROB+STAY_PROB;
+bool Simulation::createTransitionProbs()
+{
+	//printSimFancyConnections();
+	//initialize dynamic memory for Transitions
+	std::cout << "Successfully Entered Function" << std::endl;
+	transitions = new int**[sizeof(int)*numStates];
+	std::cout << "Successfully Create initial pointer" << std::endl;
+	for(int s = 0;s < numStates; s++)
+	{
+	  transitions[s] = new int*[sizeof(int)*numActions];
+		for(int a = 0;a < numActions; a++)
+		{
+			transitions[s][a] = new int[sizeof(int)*(numStates+1)];
+			//std::cout << "size of Array: " << sizeof(int) << ", " << (numStates+1) << std::endl;
+		}
+			//std::cout << "s: (" << s << ")" << std::endl;
+	}
+
+	if (transitions != nullptr)
+		std::cout << "Successfully Allocated Memory" << std::endl;
+	//For every S,A pair
+	//for(int s = 0; s < numStates; s++)
+	//{
+	for(int j = 0; j < height; j++)
+	{
+		for(int i = 0; i < width; i++)
+		{
+			int s = j*width+i;
+			for (int a = 0; a < numActions; a++)
+			{
+				int sPrime = -1;
+				switch (a)
+				{
+					case UP:
+						//Grab id of state to transition to from states grid.
+						if(states[j][i].upState != nullptr)
+							sPrime = states[j][i].upState->stateIndex;
+						else
+							std::cout << "ERROR: State is NULL" << std::endl;
+						break;
+					case DOWN:
+						//Grab id of state to transition to from states grid.
+						if(states[j][i].downState != nullptr)
+							sPrime = states[j][i].downState->stateIndex;
+						else
+							std::cout << "ERROR: State is NULL" << std::endl;
+						break;
+					case LEFT:
+						//Grab id of state to transition to from states grid.
+						if(states[j][i].leftState != nullptr)
+							sPrime = states[j][i].leftState->stateIndex;
+						else
+							std::cout << "ERROR: State is NULL" << std::endl;
+						break;
+					case RIGHT:
+						//Grab id of state to transition to from states grid.
+						if(states[j][i].rightState != nullptr)
+							sPrime = states[j][i].rightState->stateIndex;
+						else
+							std::cout << "ERROR: State is NULL" << std::endl;
+						break;
+					default:
+						return false;
+				}
+				//Set transition chance for new state
+				transitions[s][a][sPrime] = TRANSITION_PROB;
+				//Set chance of staying in current state
+				transitions[s][a][s] = STAY_PROB;
+				//Set Total Probability integer for later ratio calculaitons.
+				transitions[s][a][numStates] = TOTAL_PROB;
+			}
+		}
+	}
+	return true;
+}
+
+//Possible future implementation to make calculations faster
+//bool Simulation::createTransitionIntervals(){}
+
 bool Simulation::moveState(Action a)
 {
 	// Find Current State if valid
@@ -374,38 +469,58 @@ bool Simulation::moveState(Action a)
 	if (isNoisyMove(*curState, a))
 		noisy += 1; //SET TO RANDOM VARIABLE LATER.
 	
-	
+	//If action input is outside of bounds
+	if (a < 0 || a >= ACTION_SIZE)
+		return false;	
 	//std::cout << "State ID before move: " << curState->stateIndex << std::endl;
 	// Find Resulting New State, Move to State
-	switch (a)
+
+	// transition chances are some integer portion of TOTAL_PROB
+	// Ex. [5, 10, 30 | 45] for 3 states where TOTAL_PROB is the 45.
+	// If a 20 is rolled, it will pick slot 3, since 5 + 10 < 20.
+	// If a 14 is rolled, it will pick slot 2, since 5 + 10 > 14.
+	int randNum = rand()%TOTAL_PROB;
+	int transitionSum = 0;
+	int s = curState->stateIndex;
+
+	// Itterate through possible future states
+	for (int sPrime = 0; sPrime < numStates; sPrime++)
 	{
-		case UP:
-			curState->agent = NO_AGENT_CHAR;
-			if (rand()%100 < 90)
-				curState = curState->upState;
-			break;
-		case DOWN:
-			curState->agent = NO_AGENT_CHAR;
-			if (rand()%100 < 90)
-				curState = curState->downState;
-			break;
-		case LEFT:
-			curState->agent = NO_AGENT_CHAR;
-			if (rand()%100 < 90)
-				curState = curState->leftState;
-			break;
-		case RIGHT:
-			curState->agent = NO_AGENT_CHAR;
-			if (rand()%100 < 90)
-				curState = curState->rightState;
-			break;
-		default:
-			return false;
+		//If there is a chance of transitioning
+		if (transitions[s][a][sPrime] > 0)
+		{
+			//add current transtion portion to summed transition chances.
+			transitionSum += transitions[s][a][sPrime];
+			//if rolled transition chance is exceeded, transiton.
+			if (transitionSum >= randNum)
+			{
+				switch (a)
+				{
+					case UP:
+						curState->agent = NO_AGENT_CHAR;
+						curState = curState->upState;
+						break;
+					case DOWN:
+						curState->agent = NO_AGENT_CHAR;
+						curState = curState->downState;
+						break;
+					case LEFT:
+						curState->agent = NO_AGENT_CHAR;
+						curState = curState->leftState;
+						break;
+					case RIGHT:
+						curState->agent = NO_AGENT_CHAR;
+						curState = curState->rightState;
+						break;
+					default:
+						return false;
+				}
+			}
+		}
 	}
 	//std::cout << "State ID after move: " << curState->stateIndex << std::endl;
 	curState->agent = AGENT_CHAR;
 	//std::cout << "Successfully took move: " << a << std::endl;
-
 	return true; 
 }
 

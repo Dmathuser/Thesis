@@ -18,6 +18,9 @@ Thesis Project Created by David Mathews
 - [x] Load Simulation from file
 - [x] Create Random Walk
 - [] Output Data in usable format
+  - [x] Logger for Time/Learning Rate
+  - [] Logger for Distraction Rate 
+  - [] Logger for Model Accuracy 
 - [] Create Python Script to graph Data
 
 ## Step 2:

@@ -36,10 +36,12 @@ class Simulation {
 		int noisy = 0;
 		int seed = 0;
 		SimState **states; //Dynamic Memory Allocation 
+		int ***transitions; //Dynamic Memory Allocation 
 		std::ifstream fin;
 		bool readTile(int row, int col);
 		bool connectStates();
 		bool isValidSim(); // Checks that edges of sim are all walls
+		bool createTransitionProbs();
 	public:
 		Simulation();
 		Simulation(int seed);
@@ -55,7 +57,9 @@ class Simulation {
 		int getCurStateIndex();
   	int getNumStates(){return numStates;}
   	int getNumActions(){return numActions;}
+  	int getNoiseCount(){return noisy;}
   	int getSeed(){return seed;}
+  	int*** getTransitions(){return transitions;}
 		bool setCurState(int stateIndex);
 		bool moveState(Action a);
 		bool isValidMove(SimState s, Action a);

@@ -5,7 +5,7 @@
 
 PIG_alg::PIG_alg(int seed, int numStates, int numActions):Policy(numStates,numActions)
 {
-	seed = seed;
+	this->seed = seed;
 	srand(seed); //Might be slow...
 }
 

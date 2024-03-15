@@ -1,19 +1,7 @@
 #ifndef _POLICY_H
 #define _POLICY_H
 #include "enums.h"
-
-struct State
-{
-	int StateId = -1;
-	int Noise = 0;
-};
-
-struct StateTransition
-{
-	State s;
-	Action a;
-	State sPrime;
-};
+#include "structs.h"
 
 class Policy {
 	protected:
@@ -31,6 +19,9 @@ class Policy {
 		Policy();
   Policy(int states, int actions);
 		~Policy();
+  	int getNumStates(){return states;}
+  	int getN(){return N;}
+  	int*** getTransitionCount(){return transitionCount;}
 		virtual Action getAction(State s);
 		virtual void Update(StateTransition sas);
 		//virtual void Update(StateTransition *sas);

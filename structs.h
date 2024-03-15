@@ -20,4 +20,18 @@ struct Index
 	int x = -1; //Width Index
 	int y = -1; //Height Index
 };
+
+struct State
+{
+	int StateId = -1;
+	int Noise = 0;
+};
+
+struct StateTransition
+{
+	State s;
+	Action a;
+	State sPrime;
+};
+
 #endif

@@ -31,25 +31,33 @@ int main(int argc, char** argv)
 void TestPolicy(string filename, int seed)
 {
 	int episodeLength = 100;
+	cout << "Start" << endl;
 	Simulation sim = Simulation(filename);
 	sim.setCurState(5);
 	sim.printSimFancy();
 	//Setup Logger
-	SimLogger logger = SimLogger(&sim, sim.getSeed());
 	//RandWalk policy = RandWalk(seed,sim.getNumStates(),sim.getNumActions());
 	PIG_alg policy = PIG_alg(seed,sim.getNumStates(),sim.getNumActions());
-	sim.setCurState(5);
+	SimLogger logger = SimLogger(&sim, &policy, sim.getSeed());
+
+	sim.setCurState(5); //Set starting state for agent in simulation
 	State s = {5};
 	Action a;
-	StateTransition sas = {0};  
+	StateTransition sas = {0};
+	cout << "Successfully Initialized" << endl;
 	logger.startLog();
+	cout << "Successfully Started Logging" << endl;
 	for (int i = 0; i < episodeLength; i++)
 	{
 		a = policy.getAction(s);
+		//cout << "Successfully Got Action: " << a << endl;
 		printAction(a);
+		//cout << "Successfully Print Action: " << a << endl;
 		sim.moveState(a);
+		//cout << "Successfully Moved State" << endl;
 		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
 		policy.Update(sas);
+		//cout << "Successfully Update Policy" << endl;
 		//printAction(a);
 		//Take timestep, update s.
 		s = sas.sPrime;
