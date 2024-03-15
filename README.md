@@ -19,13 +19,14 @@ Thesis Project Created by David Mathews
 - [x] Create Random Walk
 - [] Output Data in usable format
   - [x] Logger for Time/Learning Rate
-  - [] Logger for Distraction Rate 
-  - [] Logger for Model Accuracy 
+  - [x] Logger for Distraction Rate 
+  - [x] Logger for Model Accuracy 
 - [] Create Python Script to graph Data
 
 ## Step 2:
 - [x] Work on PIG.
 - [] Work on PIG++
+- [] Implement Noise in Policy Action choice
 
 ## Step 3:
 - [] Get Data Arguments Working.
