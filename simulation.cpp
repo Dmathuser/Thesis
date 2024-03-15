@@ -277,7 +277,7 @@ bool Simulation::printSimFancyConnections()
 					if (curState->down != ' ') // If upward is a wall
 						std::cout << cornerChar << std::setw(PLOT_WIDTH) << 'u' << std::setw(PLOT_WIDTH) << cornerChar;
 					else
-						std::cout << cornerChar << std::setw(PLOT_WIDTH) << curState->rightState->stateIndex << std::setw(PLOT_WIDTH) << cornerChar;
+						std::cout << cornerChar << std::setw(PLOT_WIDTH) << curState->downState->stateIndex << std::setw(PLOT_WIDTH) << cornerChar;
 				}
 			}
 			//std::cout << "Test";
@@ -304,7 +304,7 @@ bool Simulation::readTile(int row, int col)
   if (((value >> 3) & 1) != 0) // If Right tile is Wall (bit 4 is set)
     states[row][col].right = '|';
   // Store Noisy-TV's Overwrite walls if necessary.
-  if (((value >> 4) & 15) != 0) // If tile is Noisy-TV (Any bits 5-8 true)
+  if (((value >> 4) & 0xF) != 0) // If tile is Noisy-TV (Any bits 5-8 true)
     if (((value >> 4) & 1) != 0) // If Top tile is Noisy-TV (bit 5 is set)
       states[row][col].up = '^';
   if (((value >> 5) & 1) != 0) // If Bottom tile is Noisy-TV (bit 6 is set)
