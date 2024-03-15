@@ -395,6 +395,11 @@ bool Simulation::createTransitionProbs()
 		}
 			//std::cout << "s: (" << s << ")" << std::endl;
 	}
+	//Initialize transitions to 0
+	for (int s = 0; s < numStates; s++)
+		for (int a = 0; a < ACTION_SIZE; a++)
+			for (int sPrime = 0; sPrime < numStates+1; sPrime++)
+				transitions[s][a][sPrime] = 0;
 
 	if (transitions != nullptr)
 		std::cout << "Successfully Allocated Memory" << std::endl;

@@ -32,7 +32,7 @@ class Simulation {
 		int width = 0;
 		int height = 0;
 		int numStates = 0;
-   	int numActions = 4; // ok, just hardcode it
+   	int numActions = ACTION_SIZE; // ok, just hardcode it
 		int noisy = 0;
 		int seed = 0;
 		SimState **states; //Dynamic Memory Allocation 
