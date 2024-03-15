@@ -47,8 +47,7 @@ bool SimLogger::log()
 		stopLog();
 	//calculate KL-divergence of current model to true model
 	double policyAccuracy = getPolicyAccuracy();
-	//std::cout << "Successfully got policyAccuracy" << std::endl;
-	std::cout << "Successfully got policyAccuracy: " << policyAccuracy << std::endl;
+	//std::cout << "Successfully got policyAccuracy: " << policyAccuracy << std::endl;
 	//logs.modelAccuracy.push_back(getPolicyAccuracy());
 	logs.modelAccuracy.push_back(policyAccuracy);
 	//std::cout << "Successfully Update modelAccuracy" << std::endl;

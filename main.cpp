@@ -47,10 +47,11 @@ void TestPolicy(string filename, int seed)
 	cout << "Successfully Initialized" << endl;
 	logger.startLog();
 	cout << "Successfully Started Logging" << endl;
+	cout << "Running Simulation with " << episodeLength << " Timesteps" << endl;
 	for (int i = 0; i < episodeLength; i++)
 	{
 		a = policy.getAction(s);
-		printAction(a);
+		//printAction(a);
 		sim.moveState(a);
 		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
 		policy.Update(sas);
@@ -61,7 +62,7 @@ void TestPolicy(string filename, int seed)
 	}
 	cout << endl;
 	logger.stopLog();
-	logger.printSimLogs("SimLogs.txt");
+	logger.printSimLogs("Logs.txt");
 }
 
 StateTransition getSAS(State s, Action a, Simulation *sim)

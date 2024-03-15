@@ -157,7 +157,7 @@ bool Simulation::connectStates()
 				std::cout << "ERROR curState(" << j << ", " << i << ") is NULL" << std::endl;
 		}
 	}
-	printSimFancyConnections();
+	//printSimFancyConnections();
 	return true;
 }
 
