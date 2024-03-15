@@ -41,11 +41,17 @@ bool SimLogger::log()
 {
 	//Fill in SimLogs structure
 	logs.distractionRate.push_back(sim->getNoiseCount());
+	//std::cout << "Successfully Update distractionRate" << std::endl;
 	//If an optimal policy has been found, stop timer and log time
 	if (isPolicyOptimal())
 		stopLog();
 	//calculate KL-divergence of current model to true model
-	logs.modelAccuracy.push_back(getPolicyAccuracy());
+	double policyAccuracy = getPolicyAccuracy();
+	//std::cout << "Successfully got policyAccuracy" << std::endl;
+	std::cout << "Successfully got policyAccuracy: " << policyAccuracy << std::endl;
+	//logs.modelAccuracy.push_back(getPolicyAccuracy());
+	logs.modelAccuracy.push_back(policyAccuracy);
+	//std::cout << "Successfully Update modelAccuracy" << std::endl;
 	return true;
 }
 
@@ -90,15 +96,23 @@ double SimLogger::getPolicyAccuracy()
 	int numStates = policy->getNumStates();
 	int ***theta = sim->getTransitions();
 	int ***thetahat = policy->getTransitionCount();
+	//std::cout << "Successfully Initialize data" << std::endl;
 	//DOUBLE CHECK FOR SPEED
 	for (int s = 0; s < numStates; s++)
 	{
 		for (int a = 0; a < ACTION_SIZE; a++)
 		{
-			MissingInformation += KL_D(theta[a][s], thetahat[a][s]);
+			double KL_div = KL_D(theta[s][a], thetahat[s][a]);
+			//double KL_div = KL_D(thetahat[s][a], theta[s][a]); //TEST
+			if (!isnan(KL_div) && !isinf(KL_div))
+			{
+				MissingInformation += KL_div;
+				//std::cout << "KL_div: " << KL_div << std::endl;
+				//std::cout << "MissingInformation: " << MissingInformation << std::endl;
+			}
 		}
 	}
-	return 0;
+	return MissingInformation;
 }
 
 double SimLogger::KL_D(int* Theta, int* ThetaHat)
@@ -126,5 +140,24 @@ double SimLogger::KL_D(int* Theta, int* ThetaHat)
 			}
 		}
 	}
+	/*
+	std::cout << std::endl;
+	std::cout << "Theta:    [";
+	for (int i = 0; i < N-1; i++)
+	{
+		//double transitionProb = double(Theta[sPrime]) / Theta[N-1];
+		std::cout << Theta[i] << ", ";
+	}
+	std::cout << Theta[N-1] << "]" << std::endl;
+	std::cout << "ThetaHat: [";
+	for (int i = 0; i < N-1; i++)
+	{
+		//double transitionProbHat = double(ThetaHat[sPrime]) / ThetaHat[N-1];
+		std::cout << ThetaHat[i] << ", ";
+	}
+	std::cout << ThetaHat[N-1] << "]" << std::endl;
+	if (sum != 0)
+		std::cout << "KL_div = " << sum << std::endl;
+	*/
 	return sum;
 }

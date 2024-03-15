@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 
 void TestPolicy(string filename, int seed)
 {
-	int episodeLength = 100;
+	int episodeLength = 1000;
 	cout << "Start" << endl;
 	Simulation sim = Simulation(filename);
 	sim.setCurState(5);
@@ -50,14 +50,11 @@ void TestPolicy(string filename, int seed)
 	for (int i = 0; i < episodeLength; i++)
 	{
 		a = policy.getAction(s);
-		//cout << "Successfully Got Action: " << a << endl;
 		printAction(a);
-		//cout << "Successfully Print Action: " << a << endl;
 		sim.moveState(a);
-		//cout << "Successfully Moved State" << endl;
 		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
 		policy.Update(sas);
-		//cout << "Successfully Update Policy" << endl;
+		logger.log();
 		//printAction(a);
 		//Take timestep, update s.
 		s = sas.sPrime;

@@ -12,7 +12,7 @@ struct SimLogs //Used in SimLogger
 	int learningRateSteps = 0; //Time until model has an optimal solution
 	//One input per time step.
 	std::vector<int> distractionRate; //Number of Noisy-TV visits
-	std::vector<int> modelAccuracy; //KL-Divergence of true model and agent model
+	std::vector<double> modelAccuracy; //KL-Divergence of true model and agent model
 };
 
 struct Index
