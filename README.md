@@ -27,6 +27,8 @@ Thesis Project Created by David Mathews
 - [x] Work on PIG.
 - [] Work on PIG++
 - [] Implement Noise in Policy Action choice
+	- [v] Update PIG to use new Vectors
+	- [] Update KL-div to use new Vectors
 
 ## Step 3:
 - [] Get Data Arguments Working.

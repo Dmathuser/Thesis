@@ -25,7 +25,7 @@ class SimLogger {
 		Simulation *sim = nullptr;
 		Policy *policy = nullptr;
 		std::ofstream fout;
-		double KL_D(int* Theta, int* ThetaHat);
+		double KL_D(int* Theta, StateTransitionVector* ThetaHat);
 		double getPolicyAccuracy();
 	public:
 		SimLogger(Simulation *simulation, Policy *policy);

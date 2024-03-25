@@ -15,12 +15,13 @@ StateTransition getSAS(State s, Action a, Simulation *sim);
 int main(int argc, char** argv)
 {
 	// Initialize variables
-	int numEpochs = 1;
-	int numEpisodes = 1;
+	//int numEpochs = 1;
+	//int numEpisodes = 1;
 
 	// Data Arguments
 	// Load Simulation from File
 	TestPolicy("TestSim.sim", 42);
+	//TestPolicy("Simulation.sim", 42);
 	//TestSim("TestSim.sim");
 	// Set variables
 	// Epochs Loop (Loop once for each Episode)
@@ -30,19 +31,28 @@ int main(int argc, char** argv)
 
 void TestPolicy(string filename, int seed)
 {
-	int episodeLength = 1000;
+	const string MODE = "RAND";
+	int episodeLength = 10000;
 	cout << "Start" << endl;
 	Simulation sim = Simulation(filename);
 	sim.setCurState(5);
 	sim.printSimFancy();
 	//Setup Logger
 	//RandWalk policy = RandWalk(seed,sim.getNumStates(),sim.getNumActions());
-	PIG_alg policy = PIG_alg(seed,sim.getNumStates(),sim.getNumActions());
+	/*
+	if(MODE == "PIG++")
+		Policy policy = nullptr;
+	else if (MODE == "PIG")
+		PIG_alg policy = PIG_alg(seed,sim.getNumStates(),sim.getNumActions());
+	else
+		RandWalk policy = RandWalk(seed, sim.getNumStates(), sim.getNumActions());
+		*/
+	RandWalk policy = RandWalk(seed, sim.getNumStates(), sim.getNumActions());
 	SimLogger logger = SimLogger(&sim, &policy, sim.getSeed());
 
 	sim.setCurState(5); //Set starting state for agent in simulation
 	State s = {5};
-	Action a;
+	Action a = UP;
 	StateTransition sas = {0};
 	cout << "Successfully Initialized" << endl;
 	logger.startLog();
@@ -50,19 +60,31 @@ void TestPolicy(string filename, int seed)
 	cout << "Running Simulation with " << episodeLength << " Timesteps" << endl;
 	for (int i = 0; i < episodeLength; i++)
 	{
+		//std::cout << std::endl << "Pre1 Update - ";
+		//policy.PrintTransitionVectors(s, a);
+
 		a = policy.getAction(s);
+
 		//printAction(a);
+
 		sim.moveState(a);
 		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
+
 		policy.Update(sas);
 		logger.log();
+
 		//printAction(a);
 		//Take timestep, update s.
 		s = sas.sPrime;
 	}
 	cout << endl;
 	logger.stopLog();
-	logger.printSimLogs("Logs.txt");
+	if(MODE == "PIG++")
+		logger.printSimLogs("LogsPigi++.txt");
+	else if (MODE == "PIG")
+		logger.printSimLogs("LogsPig.txt");
+	else
+		logger.printSimLogs("LogsRandWalk.txt");
 }
 
 StateTransition getSAS(State s, Action a, Simulation *sim)
@@ -72,6 +94,7 @@ StateTransition getSAS(State s, Action a, Simulation *sim)
 	sas.a = a;
 	sas.sPrime.StateId = sim->getCurStateIndex(); //Get State ID for new state
 	sas.sPrime.Noise = s.Noise; //Propegate Noise forward through states
+	//cout << "(s,a,s',s'Noise) = (" << s.StateId << ", " << a << ", " << sas.sPrime.StateId << ", " << sas.sPrime.Noise << ")" << endl;
 	return sas;
 }
 

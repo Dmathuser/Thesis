@@ -6,20 +6,16 @@ Policy::Policy()
 {
   states=actions=0;
   transitionCount = NULL;
-	N = 0;
 }
 
 Policy::Policy(int states, int actions)
 {
   this->states = states;
   this->actions = actions;
-	this->N = states+1;
-  transitionCount = new int**[states];
+  transitionCount = new StateTransitionVector*[states];
   for(int i = 0; i < states; i++)
     {
-      transitionCount[i] = new int*[actions];
-      for(int j=0;j<actions;j++)
-	transitionCount[i][j] = new int[N]{0,0};
+      transitionCount[i] = new StateTransitionVector[actions];
     }
   std::cout << "Policy initialized with "<<states<<" states and "<<actions<<" actions.\n";
 }
@@ -30,11 +26,9 @@ Policy::~Policy()
   if(transitionCount != NULL)
     {
       for(int i = 0; i < states; i++)
-	{
-	  for(int j=0;j<actions;j++)
-	    delete[] transitionCount[i][j];
-	  delete[] transitionCount[i];
-	}      
+			{
+				delete[] transitionCount[i];
+			}      
       delete[] transitionCount;
     }
 }
@@ -48,8 +42,20 @@ Action Policy::getAction(State s)
 void Policy::Update(StateTransition sas)
 {
 	int s = sas.s.StateId;
-	// int curCount = transitionCount[s][sas.a][0];
-	//int TotCount = stateProbability[sas.s][sas.a][1];
-	transitionCount[s][sas.a][0] += 1; //increase counter for sas observed
-	transitionCount[s][sas.a][1] += 1; //increase counter for total sa.
+	StateCounter *tempStateCounter = nullptr;
+
+	//Update counter for transition observed
+	if (findStateCounterIndex(&transitionCount[s][sas.a].sPrime, &sas.sPrime, &tempStateCounter))
+		tempStateCounter->count += 1;
+	else //Add observed transition to known transitions if it wasn't there.
+	{
+		tempStateCounter = new StateCounter;
+		State ObservedState = {sas.sPrime.StateId,sas.sPrime.Noise};
+		transitionCount[s][sas.a].sPrime.push_back(*tempStateCounter);
+		transitionCount[s][sas.a].sPrime.back().count += 1;
+		tempStateCounter = &transitionCount[s][sas.a].sPrime.back(); 
+		copy_State(&ObservedState, &tempStateCounter->s);
+	}
+	//increase counter for total number of observed transitions.
+	transitionCount[s][sas.a].totalCount += 1;
 }

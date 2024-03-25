@@ -1,4 +1,5 @@
 #include "simLogger.h"
+#include "structs.h"
 
 SimLogger::SimLogger(Simulation *simulation, Policy *policy_)
 {
@@ -47,7 +48,8 @@ bool SimLogger::log()
 		stopLog();
 	//calculate KL-divergence of current model to true model
 	double policyAccuracy = getPolicyAccuracy();
-	//std::cout << "Successfully got policyAccuracy: " << policyAccuracy << std::endl;
+	//if(policyAccuracy != 0)
+		//std::cout << "Successfully got policyAccuracy: " << policyAccuracy << std::endl;
 	//logs.modelAccuracy.push_back(getPolicyAccuracy());
 	logs.modelAccuracy.push_back(policyAccuracy);
 	//std::cout << "Successfully Update modelAccuracy" << std::endl;
@@ -76,7 +78,7 @@ bool SimLogger::printSimLogs(std::string outFileName)
 	fout << "Time taken by function: "
          << logs.learningRateCount << " milliseconds" << std::endl;
 	fout << "TimeStep, Distraction Rate, Model Accuracy" << std::endl;
-	for (int i = 0; i < logs.distractionRate.size(); i++)
+	for (int i = 0; i < int(logs.distractionRate.size()); i++)
 	{
 		fout << i << ", " 
 			<< logs.distractionRate[i] << ", "
@@ -94,17 +96,23 @@ double SimLogger::getPolicyAccuracy()
 	double MissingInformation = 0;
 	int numStates = policy->getNumStates();
 	int ***theta = sim->getTransitions();
-	int ***thetahat = policy->getTransitionCount();
+	StateTransitionVector **thetahat = policy->getTransitionCount();
 	//std::cout << "Successfully Initialize data" << std::endl;
 	//DOUBLE CHECK FOR SPEED
+	//std::cout << "Successfully entered policyAccuracy: " << std::endl;
+	//std::cout << "---------------POLICY LOOP START---------------------" << std::endl;
 	for (int s = 0; s < numStates; s++)
 	{
 		for (int a = 0; a < ACTION_SIZE; a++)
 		{
-			double KL_div = KL_D(theta[s][a], thetahat[s][a]);
+			//std::cout << "-------------------------------------------" << std::endl;
+			double KL_div = KL_D(theta[s][a], &thetahat[s][a]);
+			//if (a == 0)
+				//std::cout << "Successfully entered policyAccuracy: " << std::endl;
 			//double KL_div = KL_D(thetahat[s][a], theta[s][a]); //TEST
 			if (!isnan(KL_div) && !isinf(KL_div))
 			{
+				//std::cout << "PolicyAccuracy KL_div is: " << KL_div << std::endl;
 				MissingInformation += KL_div;
 				//std::cout << "KL_div: " << KL_div << std::endl;
 				//std::cout << "MissingInformation: " << MissingInformation << std::endl;
@@ -114,28 +122,56 @@ double SimLogger::getPolicyAccuracy()
 	return MissingInformation;
 }
 
-double SimLogger::KL_D(int* Theta, int* ThetaHat)
+double SimLogger::KL_D(int* Theta, StateTransitionVector* ThetaHat)
 {
-	int N = policy->getN();
+	//std::cout << "Successfully entered KL_D: " << std::endl;
+	int N = sim->getNumStates() + 1;
+	//std::cout << "N = " << numStates << std::endl;
 	//Check for empty transition Vector
-	if (Theta[N-1] == 0 || ThetaHat[N-1] == 0)
+	if (Theta[N-1] == 0 || ThetaHat->totalCount == 0)
+	{
+		if (Theta[N-1] == 0 && ThetaHat->totalCount == 0)
+			std::cout << "Empty transition Vector: (" << Theta[N-1] << "," << ThetaHat->totalCount << ")" << std::endl;
 		return std::numeric_limits<double>::infinity();
+	}
 	double sum = 0;
+	int count = 0;
+
+	/*
+	std::cout << std::endl << "ThetaHat (" << ThetaHat->s.StateId << ", " << ThetaHat->a << ") Vector of counters: ";
+	// For Each vector element, Print (stateId, Noise, Count)
+	for (int i = 0; i < ThetaHat->sPrime.size(); i++)
+		std::cout << "(" << ThetaHat->sPrime[i].s.StateId << ", " << ThetaHat->sPrime[i].s.Noise << ", " << ThetaHat->sPrime[i].count << ")" << ", ";
+	std::cout << std::endl; 
+	*/	
 	// Loop through all possible state transitions given s and a.
 	for (int sPrime = 0; sPrime < N-1; sPrime++)
 	{
-		//Transform integer counts into transition probabilites.
-		//TODO?, update to use GetProbability function.
-		double transitionProb = double(Theta[sPrime]) / Theta[N-1];
-		double transitionProbHat = double(ThetaHat[sPrime]) / ThetaHat[N-1];
-		//EQUATION: Theta(sas') * Log_2((Theta(sas')/ThetaHat(sas')))
-		double temp = transitionProb/transitionProbHat;
-		double ans = transitionProb * log2(temp);
-		if (temp != 0 && !isnan(temp))
+		//Only check state transition if possibility is nonzero
+		if (Theta[sPrime] != 0)
 		{
-			if (ans != 0 && !isnan(temp) && !isinf(temp))
+			//get count of Thetahat sas' transition ignoring noise
+			//std::cout << "sPrime = " << sPrime << std::endl;
+			int ThetaHatCount = getNoisyStateCount(ThetaHat, sPrime);
+			if (ThetaHatCount != 0)
+				count += 1;
+				//return std::numeric_limits<double>::infinity();
+			//Transform integer counts into transition probabilites.
+			//TODO?, update to use GetProbability function.
+			double transitionProb = double(Theta[sPrime]) / Theta[N-1];
+			double transitionProbHat = double(ThetaHatCount) / ThetaHat->totalCount;
+			//EQUATION: Theta(sas') * Log_2((Theta(sas')/ThetaHat(sas')))
+			double temp = transitionProb/transitionProbHat;
+			double ans = transitionProb * log2(temp);
+			//if (transitionProb == 0)
+			/*
+			if (ThetaHatCount != 0)
+				std::cout << "[Theta,ThetaHat]: [" << transitionProb << ", " << transitionProbHat << "]" << std::endl;
+				*/
+			if (ans != 0 && !isnan(ans) && !isnan(temp) && !isinf(temp))
 			{
 				sum += ans;
+				//std::cout << "Logging KL_D sum is now: " << sum << std::endl;
 			}
 		}
 	}
@@ -158,5 +194,6 @@ double SimLogger::KL_D(int* Theta, int* ThetaHat)
 	if (sum != 0)
 		std::cout << "KL_div = " << sum << std::endl;
 	*/
+	//std::cout << "Count: " << count << std::endl;
 	return sum;
 }

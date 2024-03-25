@@ -344,13 +344,14 @@ SimState* Simulation::getCurState()
 
 int Simulation::getCurStateIndex()
 {
+	return getCurState()->stateIndex;
 	// Loop through states, return first state with valid agent.  
   for (int j = 0; j < height; j++)
 		for (int i = 0; i < width; i++)
 			if (states[j][i].agent == AGENT_CHAR)
 			  {
-			    // std::cout << " getCurStateIndex: "<<j*width+i<<std::endl;
-				return j*width+i;
+			    std::cout << " getCurStateIndex: "<<j*width+i<<std::endl;
+					return j*width+i;
 			  }
 	return -1;
 }
@@ -359,13 +360,14 @@ bool Simulation::setCurState(int stateIndex)
 {
 	// Find curent state if valid.
 	SimState* curState = getCurState();
-	// Remove curent agent from state.
-	if (curState != nullptr)
-		curState->agent = NO_AGENT_CHAR;
 
 	// Check for valid input state.
 	if (stateIndex < 0 || stateIndex >= numStates)
 		return false;
+
+	// Remove curent agent from state.
+	if (curState != nullptr)
+		curState->agent = NO_AGENT_CHAR;
 
 	// Add agent to given state.
 	int column = stateIndex % width;
@@ -448,14 +450,29 @@ bool Simulation::createTransitionProbs()
 						return false;
 				}
 				//Set transition chance for new state
-				transitions[s][a][sPrime] = TRANSITION_PROB;
+				transitions[s][a][sPrime] += TRANSITION_PROB;
 				//Set chance of staying in current state
-				transitions[s][a][s] = STAY_PROB;
+				transitions[s][a][s] += STAY_PROB;
 				//Set Total Probability integer for later ratio calculaitons.
 				transitions[s][a][numStates] = TOTAL_PROB;
 			}
 		}
 	}
+	/*
+	std::cout << "Simulation transition vectors:" << std::endl;
+	for(int j = 0; j < height; j++)
+		for(int i = 0; i < width; i++)
+		{
+			int s = j*width+i;
+			for (int a = 0; a < numActions; a++)
+			{
+				std::cout << "State (" << s << ", " << a << "): [";
+				for (int sPrime = 0; sPrime < numStates+1; sPrime++)
+					std::cout << transitions[s][a][sPrime] << ", ";
+				std::cout << "]" << std::endl;
+			}
+		}
+	*/
 	return true;
 }
 
@@ -484,10 +501,11 @@ bool Simulation::moveState(Action a)
 	// Ex. [5, 10, 30 | 45] for 3 states where TOTAL_PROB is the 45.
 	// If a 20 is rolled, it will pick slot 3, since 5 + 10 < 20.
 	// If a 14 is rolled, it will pick slot 2, since 5 + 10 > 14.
-	int randNum = rand()%TOTAL_PROB;
+	int randNum = (rand()%TOTAL_PROB);
 	int transitionSum = 0;
 	int s = curState->stateIndex;
 
+	//std::cout << "RandNum: " << randNum << std::endl;
 	// Itterate through possible future states
 	for (int sPrime = 0; sPrime < numStates; sPrime++)
 	{
@@ -497,36 +515,17 @@ bool Simulation::moveState(Action a)
 			//add current transtion portion to summed transition chances.
 			transitionSum += transitions[s][a][sPrime];
 			//if rolled transition chance is exceeded, transiton.
-			if (transitionSum >= randNum)
+			if (transitionSum > randNum)
 			{
-				switch (a)
-				{
-					case UP:
-						curState->agent = NO_AGENT_CHAR;
-						curState = curState->upState;
-						break;
-					case DOWN:
-						curState->agent = NO_AGENT_CHAR;
-						curState = curState->downState;
-						break;
-					case LEFT:
-						curState->agent = NO_AGENT_CHAR;
-						curState = curState->leftState;
-						break;
-					case RIGHT:
-						curState->agent = NO_AGENT_CHAR;
-						curState = curState->rightState;
-						break;
-					default:
-						return false;
-				}
+				curState->agent = NO_AGENT_CHAR;
+				if(setCurState(sPrime))
+					return true;
+				else
+					return false;
 			}
 		}
 	}
-	//std::cout << "State ID after move: " << curState->stateIndex << std::endl;
-	curState->agent = AGENT_CHAR;
-	//std::cout << "Successfully took move: " << a << std::endl;
-	return true; 
+	return false; 
 }
 
 // Determines if given state s allows for movement in direction a.

@@ -1,5 +1,6 @@
 #ifndef _STRUCTS_H
 #define _STRUCTS_H
+#include "enums.h"
 #include <chrono>
 #include <vector>
 
@@ -30,8 +31,32 @@ struct State
 struct StateTransition
 {
 	State s;
-	Action a;
+	Action a = UP;
 	State sPrime;
 };
+
+struct StateCounter
+{
+	State s;
+	int count = 0; //Number of Transitions to this state.
+};
+
+struct StateTransitionVector
+{
+	State s;
+	Action a = UP;
+	std::vector<StateCounter> sPrime;
+	int totalCount = 0; //Total transitions using this vector.
+};
+
+const bool isStateEqual(State *s1, State *s2);
+const bool isNoisyStateEqual(State *s1, State *s2);
+const bool isNoisyStateEqual(State *s1, int s2_Id);
+const int getNoisyStateCount(StateTransitionVector *sas, int stateId);
+bool findStateCounterIndex(std::vector<StateCounter> *sVec,
+	State *s, StateCounter **foundStateCounter);
+bool copy_State(State *src, State *dest);
+bool copy_StateCounter(StateCounter *src, StateCounter *dest);
+bool copy_StateTransitionVector(StateTransitionVector *src, StateTransitionVector *dest);
 
 #endif
