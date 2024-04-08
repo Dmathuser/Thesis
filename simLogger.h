@@ -26,11 +26,15 @@ class SimLogger {
 		Policy *policy = nullptr;
 		std::ofstream fout;
 		double KL_D(int* Theta, StateTransitionVector* ThetaHat);
+		int KL_D_InfCount(int* Theta, StateTransitionVector* ThetaHat);
 		double getPolicyAccuracy();
+		int getPolicyInfCount();
+		std::string SimulationName = "";
 	public:
 		SimLogger(Simulation *simulation, Policy *policy);
 		SimLogger(Simulation *simulation, int simSeed);
 		SimLogger(Simulation *simulation, Policy *policy_, int simSeed);
+		SimLogger(Simulation *simulation, Policy *policy_, std::string SimName, int simSeed);
 		~SimLogger();
 		bool startLog();
 		bool stopLog();

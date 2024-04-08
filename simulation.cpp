@@ -18,6 +18,13 @@ Simulation::Simulation(std::string filename)
 	initializeSim(filename);
 }
 
+Simulation::Simulation(std::string filename, int seed)
+{
+	seed = seed;
+	srand(seed);
+	initializeSim(filename);
+}
+
 Simulation::~Simulation()
 {
   for(int i = 0;i < height; i++)
@@ -28,6 +35,7 @@ Simulation::~Simulation()
     	delete[] transitions[s][a];
 		delete[] transitions[s];
 	}
+	delete[] transitions;
   delete[] states;  
 }
 
@@ -384,9 +392,9 @@ bool Simulation::createTransitionProbs()
 {
 	//printSimFancyConnections();
 	//initialize dynamic memory for Transitions
-	std::cout << "Successfully Entered Function" << std::endl;
+	//std::cout << "Successfully Entered Function" << std::endl;
 	transitions = new int**[sizeof(int)*numStates];
-	std::cout << "Successfully Create initial pointer" << std::endl;
+	//std::cout << "Successfully Create initial pointer" << std::endl;
 	for(int s = 0;s < numStates; s++)
 	{
 	  transitions[s] = new int*[sizeof(int)*numActions];
@@ -403,8 +411,8 @@ bool Simulation::createTransitionProbs()
 			for (int sPrime = 0; sPrime < numStates+1; sPrime++)
 				transitions[s][a][sPrime] = 0;
 
-	if (transitions != nullptr)
-		std::cout << "Successfully Allocated Memory" << std::endl;
+	//if (transitions != nullptr)
+		//std::cout << "Successfully Allocated Memory" << std::endl;
 	//For every S,A pair
 	//for(int s = 0; s < numStates; s++)
 	//{
@@ -486,14 +494,15 @@ bool Simulation::moveState(Action a)
 	//Return if invalid state
 	if (curState == nullptr)
 		return false;
+
+	//If action input is outside of bounds
+	if (a < 0 || a >= ACTION_SIZE)
+		return false;	
 	
 	// Check if move hits Noisy-TV
 	if (isNoisyMove(*curState, a))
 		noisy += 1; //SET TO RANDOM VARIABLE LATER.
 	
-	//If action input is outside of bounds
-	if (a < 0 || a >= ACTION_SIZE)
-		return false;	
 	//std::cout << "State ID before move: " << curState->stateIndex << std::endl;
 	// Find Resulting New State, Move to State
 
@@ -560,23 +569,31 @@ bool Simulation::isNoisyMove(SimState s, Action a)
 	switch (a)
 	{
 		case UP:
-			if ((((s.stateVal >> 5) & 1) != 0))
+			if ((((s.stateVal >> 4) & 1) != 0))
 				return true;
 			break;
 		case DOWN:
-			if ((((s.stateVal >> 6) & 1) != 0))
+			if ((((s.stateVal >> 5) & 1) != 0))
 				return true;
 			break;
 		case LEFT:
-			if ((((s.stateVal >> 7) & 1) != 0))
+			if ((((s.stateVal >> 6) & 1) != 0))
 				return true;
 			break;
 		case RIGHT:
-			if ((((s.stateVal >> 8) & 1) != 0))
+			if ((((s.stateVal >> 7) & 1) != 0))
 				return true;
 			break;
 		default:
 			return false;
 	}
 	return false;
+}
+
+bool Simulation::isNoisyMove(State s, Action a)
+{
+	int i = s.StateId % width; //width
+	int j = s.StateId / width; //height
+	// int s = j*width+i; states[j][i];
+	return isNoisyMove(states[j][i], a);
 }

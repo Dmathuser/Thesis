@@ -12,6 +12,7 @@ class Policy {
   StateTransitionVector **transitionCount;  
 		// [# of states][ACTION_SIZE];
 		//vector<State> **states; //contains model of states. Expandable
+	void Initialize();
 	public:
 		Policy();
 		Policy(int states, int actions);

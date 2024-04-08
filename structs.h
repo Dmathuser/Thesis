@@ -14,6 +14,8 @@ struct SimLogs //Used in SimLogger
 	//One input per time step.
 	std::vector<int> distractionRate; //Number of Noisy-TV visits
 	std::vector<double> modelAccuracy; //KL-Divergence of true model and agent model
+	std::vector<int> Infinity_Count; //KL-Divergence of true model and agent model
+	std::vector<double> time; //Number of Noisy-TV visits
 };
 
 struct Index

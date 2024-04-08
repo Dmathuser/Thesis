@@ -28,6 +28,21 @@ SimLogger::SimLogger(Simulation *simulation, Policy *policy_, int simSeed)
 		std::cout << "Error: Given Policy is Null" << std::endl;
 }
 
+SimLogger::SimLogger(Simulation *simulation, Policy *policy_, std::string SimName, int simSeed)
+{
+	logs.seed = simSeed;
+	SimulationName = SimName;
+	if (simulation != nullptr)
+		sim = simulation;
+	else
+		std::cout << "Error: Given Simulation is Null" << std::endl;
+
+	if (policy_ != nullptr)
+		policy = policy_;
+	else
+		std::cout << "Error: Given Policy is Null" << std::endl;
+}
+
 SimLogger::~SimLogger()
 {
 }
@@ -35,21 +50,27 @@ SimLogger::~SimLogger()
 bool SimLogger::startLog()
 {
 	startTime = std::chrono::high_resolution_clock::now();
-	return false;
+	return true;
 }
 
 bool SimLogger::log()
 {
+	stopTime = std::chrono::high_resolution_clock::now();
+	using FloatMilli = std::chrono::duration<double, std::chrono::milliseconds::period>;
+	logs.time.push_back(FloatMilli(stopTime - startTime).count());
 	//Fill in SimLogs structure
 	logs.distractionRate.push_back(sim->getNoiseCount());
 	//std::cout << "Successfully Update distractionRate" << std::endl;
 	//If an optimal policy has been found, stop timer and log time
-	if (isPolicyOptimal())
-		stopLog();
+	//if (isPolicyOptimal())
+		//std::cout << "Current Time is: " << logs.distractionRate.size();
+		//stopLog();
 	//calculate KL-divergence of current model to true model
 	double policyAccuracy = getPolicyAccuracy();
-	//if(policyAccuracy != 0)
-		//std::cout << "Successfully got policyAccuracy: " << policyAccuracy << std::endl;
+
+	int infCount = getPolicyInfCount();
+	logs.Infinity_Count.push_back(infCount);
+
 	//logs.modelAccuracy.push_back(getPolicyAccuracy());
 	logs.modelAccuracy.push_back(policyAccuracy);
 	//std::cout << "Successfully Update modelAccuracy" << std::endl;
@@ -75,19 +96,26 @@ bool SimLogger::printSimLogs(std::string outFileName)
 		return false;
 	}
 	fout << "Seed is: " << logs.seed << std::endl;
-	fout << "Time taken by function: "
-         << logs.learningRateCount << " milliseconds" << std::endl;
-	fout << "TimeStep, Distraction Rate, Model Accuracy" << std::endl;
+	fout << "Number of samples is: " << logs.distractionRate.size() << std::endl;
+	if (SimulationName != "")
+		fout << "Simulation name is: " << SimulationName << std::endl;
+	//fout << "Time taken by function: "
+    //     << logs.learningRateCount << " milliseconds" << std::endl;
+	fout << "TimeStep, Distraction Rate, Missed States, Model Accuracy, Time (ms)" << std::endl;
 	for (int i = 0; i < int(logs.distractionRate.size()); i++)
 	{
 		fout << i << ", " 
 			<< logs.distractionRate[i] << ", "
-			<< logs.modelAccuracy[i] << std::endl;
+			<< logs.Infinity_Count[i] << ", "
+			<< logs.modelAccuracy[i] << ", "
+			<< logs.time[i] << std::endl;
 	}
 	return true;
 }
 bool SimLogger::isPolicyOptimal()
 {
+	if (getPolicyInfCount() == 0)
+		return true;
 	return false;
 }
 
@@ -122,11 +150,63 @@ double SimLogger::getPolicyAccuracy()
 	return MissingInformation;
 }
 
+int SimLogger::getPolicyInfCount()
+{
+	int infCount = 0;
+	int numStates = policy->getNumStates();
+	int ***theta = sim->getTransitions();
+	StateTransitionVector **thetahat = policy->getTransitionCount();
+	for (int s = 0; s < numStates; s++)
+		for (int a = 0; a < ACTION_SIZE; a++)
+			infCount += KL_D_InfCount(theta[s][a], &thetahat[s][a]);
+	return infCount;
+}
+
+int SimLogger::KL_D_InfCount(int* Theta, StateTransitionVector* ThetaHat)
+{
+	int count = 0;
+	int N = sim->getNumStates() + 1;
+
+	//Check for empty transition Vector
+	/*
+	if (Theta[N-1] == 0 || ThetaHat->totalCount == 0)
+	{
+		if (Theta[N-1] == 0 && ThetaHat->totalCount == 0)
+			std::cout << "Empty transition Vector: (" << Theta[N-1] << "," << ThetaHat->totalCount << ")" << std::endl;
+		return 1;
+	}
+	*/
+
+	// Loop through all possible state transitions given s and a.
+	for (int sPrime = 0; sPrime < N-1; sPrime++)
+	{
+		//Only check state transition if possibility is nonzero
+		if (Theta[sPrime] != 0)
+		{
+			//get count of Thetahat sas' transition ignoring noise
+			int ThetaHatCount = getNoisyStateCount(ThetaHat, sPrime);
+			//if (ThetaHatCount == 0) //IF ThetaHat does NOT have Transition.
+				//count += 1;
+			//Transform integer counts into transition probabilites.
+			double transitionProb = double(Theta[sPrime]) / Theta[N-1];
+			double transitionProbHat = double(ThetaHatCount) / ThetaHat->totalCount;
+			//EQUATION: Theta(sas') * Log_2((Theta(sas')/ThetaHat(sas')))
+			double temp = transitionProb/transitionProbHat;
+			double ans = transitionProb * log2(temp);
+
+			if (isnan(ans) || isnan(temp) || isinf(temp))
+			{
+				count += 1;
+			}
+		}
+	}
+	return count;
+}
+
 double SimLogger::KL_D(int* Theta, StateTransitionVector* ThetaHat)
 {
-	//std::cout << "Successfully entered KL_D: " << std::endl;
 	int N = sim->getNumStates() + 1;
-	//std::cout << "N = " << numStates << std::endl;
+
 	//Check for empty transition Vector
 	if (Theta[N-1] == 0 || ThetaHat->totalCount == 0)
 	{

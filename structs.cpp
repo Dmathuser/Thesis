@@ -35,7 +35,7 @@ const bool isNoisyStateEqual(State *s1, int s2_Id)
 	if (s1 != nullptr)
 	{
 		if(s1->StateId == s2_Id)
-				return true;
+			return true;
 		else
 			return false;
 	}
@@ -98,27 +98,17 @@ bool copy_StateTransitionVector(StateTransitionVector *src, StateTransitionVecto
 		return false;
 	if(!copy_State(&src->s, &dest->s))
 		return false;
-	/*
-	std::cout << "---Src Index - " << src << std::endl;
-	std::cout << "---Src Action - " << src->a << std::endl;
-	std::cout << "--Pre Dest_a, Source_a = (" << dest->a << ", " << src->a
-		<< ")" << std::endl;
-	*/
 	dest->a = src->a;
-	//std::cout << "-Post Dest_a, Source_a = (" << dest->a << ", " << src->a << ")" << std::endl;
 	for(int i = 0; i < int(src->sPrime.size()); i++)
 	{
 		if(i >= int(dest->sPrime.size())) //Make destination bigger if it is too small.
 		{
-			//std::cout << "---GrowDestination from:" << dest->sPrime.size();
 			StateCounter *tmp = new StateCounter;
 			dest->sPrime.push_back(*tmp);
-			//std::cout << " to " << dest->sPrime.size() << std::endl;
+			delete tmp;
 		}
-		//std::cout << "--PreStateCopy Dest_a, Source_a = (" << dest->sPrime[i].count << ", " << src->sPrime[i].count << ")" << std::endl;
 		if(!copy_StateCounter(&src->sPrime[i], &dest->sPrime[i]))
 			return false;
-		//std::cout << "-PostStateCopy Dest_a, Source_a = (" << dest->sPrime[i].count << ", " << src->sPrime[i].count << ")" << std::endl;
 	}
 	dest->totalCount = src->totalCount;
 	return true;

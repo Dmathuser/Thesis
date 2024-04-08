@@ -1,20 +1,28 @@
-#include "PIG.h"
+#include "EPIG.h"
 #include <stdlib.h>
 #include <iostream>
 #include <math.h>
 
-PIG_alg::PIG_alg(int seed, int numStates, int numActions):Policy(numStates,numActions)
+EPIG_alg::EPIG_alg(int seed, int numStates, int numActions):Policy(numStates,numActions)
 {
 	this->seed = seed;
 	srand(seed); //Might be slow...
 	//Initialize();
 }
 
-PIG_alg::~PIG_alg()
+EPIG_alg::EPIG_alg(int seed, int Epsilon, int numStates, int numActions):Policy(numStates,numActions)
+{
+	this->seed = seed;
+	srand(seed); //Might be slow...
+	EPSILON = Epsilon;
+	//Initialize();
+}
+
+EPIG_alg::~EPIG_alg()
 {
 }
 
-void PIG_alg::Initialize()
+void EPIG_alg::Initialize()
 {
 	//Loop through transitionCount and update s,a values 
 	for (int s=0; s < states; s++)
@@ -27,7 +35,7 @@ void PIG_alg::Initialize()
 		}
 }
 
-Action PIG_alg::getAction(State s)
+Action EPIG_alg::getAction(State s)
 {
 	int randNum = rand()%ACTION_SIZE;
 	Action a = Action(randNum);
@@ -49,13 +57,23 @@ Action PIG_alg::getAction(State s)
 			maxReturn = test;
 		}
 	}
+	//Have an Epsilon % chance of picking a random non-optimal action.
+	randNum = rand()%100;
+	if (randNum < EPSILON)
+	{
+		//Get a random offset for the action. 
+		randNum = rand()%(ACTION_SIZE-1);
+		//Pick a different action randomly based on the offset
+		randNum = (randNum+int(a)) % ACTION_SIZE;
+		a = Action(randNum);
+	}
 	//std::cout << "Pig Vector - ";
 	//PrintTransitionVectors(s, a);
 	//std::cout << "Selected Action: " << a << std::endl;
 	return a;
 }
 
-double PIG_alg::PIG(State s, Action a)
+double EPIG_alg::PIG(State s, Action a)
 {
 	double sum = 0;
 	// N is Size of third dimension of transition vector.
@@ -115,7 +133,7 @@ int* PIG_alg::MakeNewCount(int *curCountVector, int changedCount)
 	return transCountNew;
 }
 */
-void PIG_alg::PrintTransitionVectors(State s, Action a)
+void EPIG_alg::PrintTransitionVectors(State s, Action a)
 {
 	std::cout << "Vector of counters: ";
 	// For Each vector element, Print (stateId, Noise, Count)
@@ -128,7 +146,7 @@ void PIG_alg::PrintTransitionVectors(State s, Action a)
 }
 
 //NOTE: Assumes that N = States+1;
-void PIG_alg::Update(StateTransition sas)
+void EPIG_alg::Update(StateTransition sas)
 {
 	int s = sas.s.StateId;
 	StateCounter *tempStateCounter = nullptr;
@@ -175,7 +193,7 @@ void PIG_alg::Update(StateTransition sas)
 		//Return inf;
 	//If prob in neither Theta or ThetaHat
 		//Return 0;
-double PIG_alg::KL_D(StateTransitionVector *Theta, StateTransitionVector *ThetaHat)
+double EPIG_alg::KL_D(StateTransitionVector *Theta, StateTransitionVector *ThetaHat)
 {
 	//Check for empty transition Vector
 	//if (Theta->totalCount == 0 || ThetaHat->totalCount == 0)
@@ -219,7 +237,7 @@ double PIG_alg::KL_D(StateTransitionVector *Theta, StateTransitionVector *ThetaH
 }
 
 //TODO: Need to update to find sPrime index instead for variable dimensions.
-double PIG_alg::GetProbability(StateTransition sas)
+double EPIG_alg::GetProbability(StateTransition sas)
 {
 	int visitCount = 0;
 	int totalCount = transitionCount[sas.s.StateId][sas.a].totalCount;
@@ -241,22 +259,22 @@ double PIG_alg::GetProbability(StateTransition sas)
 	return GetProbability(visitCount, totalCount);
 }
 
-double PIG_alg::GetProbability(StateTransitionVector sas, StateCounter s)
+double EPIG_alg::GetProbability(StateTransitionVector sas, StateCounter s)
 {
 	return GetProbability(s.count, sas.totalCount);
 }
 
-double PIG_alg::GetProbability(StateCounter s, int totalCount)
+double EPIG_alg::GetProbability(StateCounter s, int totalCount)
 {
 	return GetProbability(s.count, totalCount);
 }
 
-double PIG_alg::GetProbability(StateTransitionVector sas, int stateIndex)
+double EPIG_alg::GetProbability(StateTransitionVector sas, int stateIndex)
 {
 	return GetProbability(sas.sPrime[stateIndex], sas.totalCount);
 }
 
-double PIG_alg::GetProbability(int visitCount, int totalCount)
+double EPIG_alg::GetProbability(int visitCount, int totalCount)
 {
 	return double(visitCount)/totalCount;
 }

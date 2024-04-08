@@ -5,17 +5,22 @@ LFLAGS=
 DEPENDFLAGS=-I. -M 
 DEFINES=
 
-OBJS=main.o simulation.o simLogger.o printSimPDF.o policy.o randWalk.o PIG.o structs.o
+OBJS=main.o simulation.o simLogger.o printSimPDF.o policy.o randWalk.o PIG.o EPIG.o TPIG.o ETPIG.o structs.o
 
 EXEFILE=ThesisSim
 
 $(EXEFILE) : $(OBJS)
 	$(CC) $(CFLAGS) -o $(EXEFILE) $(OBJS) $(LFLAGS)
 
-# to run full memory check, type "make memcheck"
+# to run full memory check, type "make memtest"
 memtest: $(EXEFILE)
 	valgrind --leak-check=full --show-leak-kinds=all ./$(EXEFILE)
 
+memtest_full: $(EXEFILE)
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=valgrind-out.txt ./$(EXEFILE)
+
+profile: $(EXEFILE)
+	valgrind --tool=callgrind --dump-instr=yes --simulate-cache=yes --collect-jumps=yes ./$(EXEFILE)
 # scan.yy.o: scan.yy.c 
 # 	$(CC) $(DEFINES) $(CFLAGS) -c $< 
 

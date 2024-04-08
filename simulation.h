@@ -46,6 +46,7 @@ class Simulation {
 		Simulation();
 		Simulation(int seed);
 		Simulation(std::string filename);
+		Simulation(std::string filename, int seed);
 		~Simulation();
 		bool initializeSim(std::string filename);
 		bool printSim();
@@ -64,6 +65,7 @@ class Simulation {
 		bool moveState(Action a);
 		bool isValidMove(SimState s, Action a);
 		bool isNoisyMove(SimState s, Action a);
+		bool isNoisyMove(State s, Action a);
 };
 
 #endif
