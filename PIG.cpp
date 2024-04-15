@@ -7,7 +7,7 @@ PIG_alg::PIG_alg(int seed, int numStates, int numActions):Policy(numStates,numAc
 {
 	this->seed = seed;
 	srand(seed); //Might be slow...
-	//Initialize();
+	//Initialize(); //Currently handled in policy class
 }
 
 PIG_alg::~PIG_alg()
@@ -33,13 +33,11 @@ Action PIG_alg::getAction(State s)
 	Action a = Action(randNum);
 	double maxReturn = 0;
 	double test = 0;
-	//std::cout << "--------Start Selection--------" << std::endl;
 	//Loop over possible actions
 	for (int i = 0; i < ACTION_SIZE; i++)
 	{
 		// Maximize PIG return.
 		test = PIG(s,Action(i));
-		//std::cout << "    PIG Returned: " << test << std::endl;
 		if (test < 0)
 			std::cout << "WARNING: Negative PIG value returned." << std::endl;
 
@@ -49,17 +47,12 @@ Action PIG_alg::getAction(State s)
 			maxReturn = test;
 		}
 	}
-	//std::cout << "Pig Vector - ";
-	//PrintTransitionVectors(s, a);
-	//std::cout << "Selected Action: " << a << std::endl;
 	return a;
 }
 
 double PIG_alg::PIG(State s, Action a)
 {
 	double sum = 0;
-	// N is Size of third dimension of transition vector.
-	// Intuitively, N is the number of s' found from a given [s,a] pair.
 
 	std::vector<StateCounter> *sPrimeVector;
 	sPrimeVector = &transitionCount[s.StateId][a].sPrime;
@@ -100,21 +93,7 @@ double PIG_alg::PIG(State s, Action a)
 		return std::numeric_limits<double>::infinity();
 	return sum;
 }
-/*
-int* PIG_alg::MakeNewCount(int *curCountVector, int changedCount)
-{
-	int *transCountNew = new int[N-1];
-	//copy existing vector
-	for (int i = 0; i < N; i++) //Include N to update total counter as well.
-	{
-		transCountNew[i] = curCountVector[i];
-	}
-	// Update as if taking new state transition.
-	transCountNew[changedCount] += 1;
-	transCountNew[N-1] += 1;
-	return transCountNew;
-}
-*/
+
 void PIG_alg::PrintTransitionVectors(State s, Action a)
 {
 	std::cout << "Vector of counters: ";
@@ -132,13 +111,8 @@ void PIG_alg::Update(StateTransition sas)
 {
 	int s = sas.s.StateId;
 	StateCounter *tempStateCounter = nullptr;
-	//int curCount = transitionCount[s][sas.a][sPrime];
 	//Update counter for transition observed
 
-
-	//std::cout << "Pre-Update - ";
-	//PrintTransitionVectors(sas.s, sas.a);
-	
 	if (findStateCounterIndex(&transitionCount[s][sas.a].sPrime, &sas.sPrime, &tempStateCounter))
 		tempStateCounter->count += 1;
 	else //Add observed transition to known transitions if it wasn't there.
@@ -178,7 +152,6 @@ void PIG_alg::Update(StateTransition sas)
 double PIG_alg::KL_D(StateTransitionVector *Theta, StateTransitionVector *ThetaHat)
 {
 	//Check for empty transition Vector
-	//if (Theta->totalCount == 0 || ThetaHat->totalCount == 0)
 	if (Theta->sPrime.size() == 0 || ThetaHat->sPrime.size() == 0)
 		return std::numeric_limits<double>::infinity();
 	double sum = 0;
@@ -209,16 +182,10 @@ double PIG_alg::KL_D(StateTransitionVector *Theta, StateTransitionVector *ThetaH
 		double ans = ThetaProb * log2(ThetaProb / ThetaHatProb);
 		if (ans != 0 && !isnan(ans) && !isinf(ans))
 			sum += ans;
-		else
-		{
-			//std::cout << "s,a,s (" << Theta->s.StateId << ", " << Theta->a << ", " << curState->StateId << ")" << std::endl;
-			//std::cout << "ThetaProb, ThetaHatProb, ans: (" << ThetaProb << ", " << ThetaHatProb << ", " << ans << ")" << std::endl;
-		}
 	}
 	return sum;
 }
 
-//TODO: Need to update to find sPrime index instead for variable dimensions.
 double PIG_alg::GetProbability(StateTransition sas)
 {
 	int visitCount = 0;

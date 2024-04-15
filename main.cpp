@@ -10,12 +10,13 @@
 
 using namespace std;
 
+string SetOutputFileExtension(string fileName, int outNumber, int epsilon);
 string SetOutputFileExtension(string filename, int outNumber);
 //void RunSimulation(string simFile, string outFile, int seed);
 void RunPIGSimulation(string simFile, string outFile, int episodeLength, int seed);
-void RunEPIGSimulation(string simFile, string outFile, int episodeLength, int seed);
+void RunEPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed);
 void RunRandSimulation(string simFile, string outFile, int episodeLength, int seed);
-void RunETPIGSimulation(string simFile, string outFile, int episodeLength, int seed);
+void RunETPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed);
 void RunTPIGSimulation(string simFile, string outFile, int episodeLength, int seed);
 void TestSim(string filename);
 void TestPolicy(string filename, int seed);
@@ -31,8 +32,8 @@ int main(int argc, char** argv)
 	//string simFile = "TestSim.sim";
 	//string fileName = "SimulationData/EPIG_1.txt";
 	string TPIGfileName = "SimulationData/TPIG_1.txt";
-	string ETPIGfileName = "SimulationData/ETPIG_1.txt";
-	string EPIGfileName = "SimulationData/EPIG_1.txt";
+	string ETPIGfileName = "EpsilonData/ETPIG_1.txt";
+	string EPIGfileName = "EpsilonData/EPIG_1.txt";
 	string PIGfileName = "SimulationData/PIG_1.txt";
 	string RandfileName = "SimulationData/Rand_1.txt";
 	string outFile;
@@ -45,18 +46,25 @@ int main(int argc, char** argv)
 		{
 			cout << "Starting Trial " << count+1 << " of " << numEpochs*numEpisodes << endl;
 			seed = count;
+			/*
 			cout << "    Part 1: TPIG" << endl;
 			outFile = SetOutputFileExtension(TPIGfileName, count);
 			RunTPIGSimulation(simFile, outFile, episodeLength, seed);
+			*/
 
-			cout << "    Part 2: ETPIG" << endl;
-			outFile = SetOutputFileExtension(ETPIGfileName, count);
-			RunETPIGSimulation(simFile, outFile, episodeLength, seed);
+			for (int epsilon = 0; epsilon <= 100; epsilon += 10)
+			{
+				cout << "  Epsilon = " << epsilon << endl;
+				cout << "    Part 2: ETPIG" << endl;
+				outFile = SetOutputFileExtension(ETPIGfileName, count, epsilon);
+				RunETPIGSimulation(simFile, outFile, episodeLength, epsilon, seed);
+
+				cout << "    Part 3: EPIG" << endl;
+				outFile = SetOutputFileExtension(EPIGfileName, count, epsilon);
+				RunEPIGSimulation(simFile, outFile, episodeLength, epsilon, seed);
+			}
+
 			/*	
-			cout << "    Part 3: EPIG" << endl;
-			outFile = SetOutputFileExtension(EPIGfileName, count);
-			RunEPIGSimulation(simFile, outFile, episodeLength, seed);
-
 			cout << "    Part 4: PIG" << endl;
 			outFile = SetOutputFileExtension(PIGfileName, count);
 			RunPIGSimulation(simFile, outFile, episodeLength, seed);
@@ -80,6 +88,21 @@ int main(int argc, char** argv)
 		// Episode Loop (Loop over time-steps t)
   return 0;
 }
+string SetOutputFileExtension(string fileName, int outNumber, int epsilon)
+{
+	string outFileName;
+	if(fileName.find_last_of('.') != string::npos)
+	{
+		string extension = fileName.substr(fileName.find_last_of('.'),4);
+
+    outFileName = fileName.substr(0,fileName.find_last_of('.'));
+		outFileName = outFileName + "_e" + to_string(epsilon);
+		outFileName = outFileName + "_" + to_string(outNumber) + extension;
+	}
+	else
+		outFileName = fileName;
+	return outFileName;
+}
 
 string SetOutputFileExtension(string fileName, int outNumber)
 {
@@ -96,9 +119,8 @@ string SetOutputFileExtension(string fileName, int outNumber)
 	return outFileName;
 }
 
-void RunETPIGSimulation(string simFile, string outFile, int episodeLength, int seed)
+void RunETPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed)
 {
-	int epsilon = 10;
 	Simulation sim = Simulation(simFile, seed);
 	//Setup Logger
 	ETPIG_alg policy = ETPIG_alg(seed,epsilon,sim.getNumStates(),sim.getNumActions());
@@ -129,7 +151,6 @@ void RunETPIGSimulation(string simFile, string outFile, int episodeLength, int s
 
 void RunTPIGSimulation(string simFile, string outFile, int episodeLength, int seed)
 {
-	//int epsilon = 10;
 	Simulation sim = Simulation(simFile, seed);
 	//Setup Logger
 	TPIG_alg policy = TPIG_alg(seed,sim.getNumStates(),sim.getNumActions());
@@ -158,10 +179,8 @@ void RunTPIGSimulation(string simFile, string outFile, int episodeLength, int se
 	logger.printSimLogs(outFile);
 }
 
-void RunEPIGSimulation(string simFile, string outFile, int episodeLength, int seed)
+void RunEPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed)
 {
-	int epsilon = 10;
-
 	Simulation sim = Simulation(simFile, seed);
 	//Setup Logger
 	EPIG_alg policy = EPIG_alg(seed, epsilon, sim.getNumStates(),sim.getNumActions());

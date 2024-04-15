@@ -9,7 +9,7 @@ Simulation::Simulation()
 
 Simulation::Simulation(int seed)
 {
-	seed = seed;
+	this->seed = seed;
 	srand(seed); //Might be slow...
 }
 
@@ -20,7 +20,7 @@ Simulation::Simulation(std::string filename)
 
 Simulation::Simulation(std::string filename, int seed)
 {
-	seed = seed;
+	this->seed = seed;
 	srand(seed);
 	initializeSim(filename);
 }

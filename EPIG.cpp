@@ -41,13 +41,15 @@ Action EPIG_alg::getAction(State s)
 	Action a = Action(randNum);
 	double maxReturn = 0;
 	double test = 0;
-	//std::cout << "--------Start Selection--------" << std::endl;
+
+	int random = rand()%100;
+	if (random < EPSILON)
+		return Action(rand()%ACTION_SIZE);
 	//Loop over possible actions
 	for (int i = 0; i < ACTION_SIZE; i++)
 	{
 		// Maximize PIG return.
 		test = PIG(s,Action(i));
-		//std::cout << "    PIG Returned: " << test << std::endl;
 		if (test < 0)
 			std::cout << "WARNING: Negative PIG value returned." << std::endl;
 
@@ -58,6 +60,7 @@ Action EPIG_alg::getAction(State s)
 		}
 	}
 	//Have an Epsilon % chance of picking a random non-optimal action.
+	/*
 	randNum = rand()%100;
 	if (randNum < EPSILON)
 	{
@@ -67,17 +70,13 @@ Action EPIG_alg::getAction(State s)
 		randNum = (randNum+int(a)) % ACTION_SIZE;
 		a = Action(randNum);
 	}
-	//std::cout << "Pig Vector - ";
-	//PrintTransitionVectors(s, a);
-	//std::cout << "Selected Action: " << a << std::endl;
+	*/
 	return a;
 }
 
 double EPIG_alg::PIG(State s, Action a)
 {
 	double sum = 0;
-	// N is Size of third dimension of transition vector.
-	// Intuitively, N is the number of s' found from a given [s,a] pair.
 
 	std::vector<StateCounter> *sPrimeVector;
 	sPrimeVector = &transitionCount[s.StateId][a].sPrime;
@@ -118,21 +117,7 @@ double EPIG_alg::PIG(State s, Action a)
 		return std::numeric_limits<double>::infinity();
 	return sum;
 }
-/*
-int* PIG_alg::MakeNewCount(int *curCountVector, int changedCount)
-{
-	int *transCountNew = new int[N-1];
-	//copy existing vector
-	for (int i = 0; i < N; i++) //Include N to update total counter as well.
-	{
-		transCountNew[i] = curCountVector[i];
-	}
-	// Update as if taking new state transition.
-	transCountNew[changedCount] += 1;
-	transCountNew[N-1] += 1;
-	return transCountNew;
-}
-*/
+
 void EPIG_alg::PrintTransitionVectors(State s, Action a)
 {
 	std::cout << "Vector of counters: ";
@@ -150,13 +135,8 @@ void EPIG_alg::Update(StateTransition sas)
 {
 	int s = sas.s.StateId;
 	StateCounter *tempStateCounter = nullptr;
-	//int curCount = transitionCount[s][sas.a][sPrime];
 	//Update counter for transition observed
 
-
-	//std::cout << "Pre-Update - ";
-	//PrintTransitionVectors(sas.s, sas.a);
-	
 	if (findStateCounterIndex(&transitionCount[s][sas.a].sPrime, &sas.sPrime, &tempStateCounter))
 		tempStateCounter->count += 1;
 	else //Add observed transition to known transitions if it wasn't there.
@@ -227,11 +207,6 @@ double EPIG_alg::KL_D(StateTransitionVector *Theta, StateTransitionVector *Theta
 		double ans = ThetaProb * log2(ThetaProb / ThetaHatProb);
 		if (ans != 0 && !isnan(ans) && !isinf(ans))
 			sum += ans;
-		else
-		{
-			//std::cout << "s,a,s (" << Theta->s.StateId << ", " << Theta->a << ", " << curState->StateId << ")" << std::endl;
-			//std::cout << "ThetaProb, ThetaHatProb, ans: (" << ThetaProb << ", " << ThetaHatProb << ", " << ans << ")" << std::endl;
-		}
 	}
 	return sum;
 }

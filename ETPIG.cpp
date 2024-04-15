@@ -41,17 +41,18 @@ void ETPIG_alg::Initialize()
 
 Action ETPIG_alg::getAction(State s)
 {
-	//std::cout << "Sucessfully Entered getAction" << std::endl;
 	int randNum = rand()%ACTION_SIZE;
 	Action a = Action(randNum);
 	double maxReturn = -1;
 	double test = -1;
+	//Epsilon Greedy
+	int random = rand()%100;
+	if (random < EPSILON)
+		return Action(rand()%ACTION_SIZE);
 	//Loop over future s' states
 	for (int i=0; i < ACTION_SIZE; i++)
 	{
-		//test = PIG++(s, Action(i));
 		test = Qvalues[s.StateId][i];
-		//std::cout << "Qvalues returned: " << test << std::endl;
 		
 		if (test > maxReturn)
 		{
@@ -60,22 +61,23 @@ Action ETPIG_alg::getAction(State s)
 		}
 	}
 	//Have an Epsilon % chance of picking a random non-optimal action.
+	/*
 	randNum = rand()%100;
 	if (randNum < EPSILON)
 	{
 		//Get a random offset for the action. 
-		randNum = rand()%(ACTION_SIZE-1);
+		//randNum = rand()%(ACTION_SIZE-1);
+		randNum = rand() % ACTION_SIZE;
 		//Pick a different action randomly based on the offset
-		randNum = (randNum+int(a)) % ACTION_SIZE;
+		//randNum = (randNum+int(a)) % ACTION_SIZE;
 		a = Action(randNum);
 	}
-	//std::cout << "Exit getAction with Result: " << a << std::endl;
+	*/
 	return a;
 }
 
 void ETPIG_alg::Update(StateTransition sas)
 {
-	//std::cout << "Sucessfully Entered Update" << std::endl;
 	//Create new Transition vector assuming (s->s', a)
 	StateTransitionVector *transCountNew = new StateTransitionVector;
 	if(!copy_StateTransitionVector(&transitionCount[sas.s.StateId][sas.a], transCountNew))
@@ -84,22 +86,15 @@ void ETPIG_alg::Update(StateTransition sas)
 	}
 
 	//Increment counters to mimic state transition s->s'
-	//transCountNew->totalCount += 1;
 	
 	if (transCountNew == nullptr)
 		std::cout << "transCountNew is nullptr" << std::endl;
 
-	//std::cout << "----Start Getting Old KL_Div" << std::endl;
-	//PrintTransitionVectors(transCountNew, sas.s, sas.a);
 	UpdateStateTransitionVectorTransitions(transCountNew, sas);
-	//PrintTransitionVectors(transCountNew, sas.s, sas.a);
-	//Calculate KL_Div[(s->s',a) || (s,a,s')] for current timestep
 	double Old_KL_Div = KL_D(transCountNew, &transitionCount[sas.s.StateId][sas.a]);
-	//std::cout << "Sucessfully Got OLD KL_Div" << std::endl;
 
 	//Update Transitions to include new sas transition.
 	UpdateTransitions(sas);
-	//std::cout << "Sucessfully Updated Transitions" << std::endl;
 
 	//Calculate KL_Div[(s->s',a) || (s,a,s')] for next timestep
 	if(!copy_StateTransitionVector(&transitionCount[sas.s.StateId][sas.a], transCountNew))
@@ -107,32 +102,22 @@ void ETPIG_alg::Update(StateTransition sas)
 		std::cout << "ERROR: Could not copy transition vector" << std::endl;
 	}
 	//Increment counters to mimic state transition s->s'
-	//std::cout << "----Start Getting New KL_Div" << std::endl;
-	//PrintTransitionVectors(transCountNew, sas.s, sas.a);
 	UpdateStateTransitionVectorTransitions(transCountNew, sas);
-	//PrintTransitionVectors(transCountNew, sas.s, sas.a);
-	//transCountNew->totalCount += 1;
-	//transCountNew->sPrime[sas.sPrime.StateId].count += 1; //Again need to use findStateCounterIndex to locate the correct index to use
 	double New_KL_Div = KL_D(transCountNew, &transitionCount[sas.s.StateId][sas.a]);
-	//std::cout << "Sucessfully Got NEW KL_Div" << std::endl;
 
 	//Calculate Reward
-	//std::cout << "----Start Intrinsic Reward Calculations" << std::endl;
 	if (isinf(Old_KL_Div) || isnan(Old_KL_Div))
 		Old_KL_Div = 0;
 	if (isinf(New_KL_Div) || isnan(New_KL_Div))
 		New_KL_Div = 0;
-	//double reward = Old_KL_Div - New_KL_Div; 
-	double reward = New_KL_Div - Old_KL_Div; //Doesn't Work. Focuses on same states over and over again
+	double reward = New_KL_Div - Old_KL_Div; 
 	if (reward < 0)
 		reward = 0;
-	//std::cout << "New, Old, Reward: [" << New_KL_Div << ", " << Old_KL_Div << ", " << reward << "]" << std::endl;	
 	//Update Q values using intrinsic reward
 	double OldQ = Qvalues[sas.s.StateId][sas.a];
-	//std::cout << "- CalculateNewQ - " << std::endl;
 	double NewQ = Qvalues[sas.sPrime.StateId][getAction(sas.sPrime)];
-	//Normalize Qvalues to avoid infinities
 
+	//Normalize Qvalues to avoid infinities
 	if (isinf(OldQ) || isnan(OldQ))
 		OldQ = 0;
 	if (isinf(NewQ) || isnan(NewQ))
@@ -146,9 +131,6 @@ void ETPIG_alg::Update(StateTransition sas)
 
 void ETPIG_alg::UpdateStateTransitionVectorTransitions(StateTransitionVector *Theta, StateTransition sas)
 {
-	//std::cout << "Sucessfully Entered UpdateTransitions" << std::endl;
-	//std::cout << "--State Transition: s,a,s' = (" << sas.s.StateId << ", " << sas.a << ", " << sas.sPrime.StateId << ")" << std::endl;
-	//int s = sas.s.StateId;
 	StateCounter *tempStateCounter = nullptr;
 	
 	if (findStateCounterIndex(&Theta->sPrime, &sas.sPrime, &tempStateCounter))
@@ -170,7 +152,6 @@ void ETPIG_alg::UpdateStateTransitionVectorTransitions(StateTransitionVector *Th
 
 void ETPIG_alg::UpdateTransitions(StateTransition sas)
 {
-	//std::cout << "Sucessfully Entered UpdateTransitions" << std::endl;
 	int s = sas.s.StateId;
 	StateCounter *tempStateCounter = nullptr;
 	
@@ -190,38 +171,9 @@ void ETPIG_alg::UpdateTransitions(StateTransition sas)
 	}
 	transitionCount[s][sas.a].totalCount += 1;
 }
-/*
-double ETPIG_alg::ETPIG(s, a, sPrime)
-{
-	double ans = 0;
-	double New_KL_Div = 0;
 
-	StateTransitionVector *transCountNew = new StateTransitionVector;
-	if(!copy_StateTransitionVector(&transitionCount[s.StateId][a], transCountNew))
-	{
-		std::cout << "ERROR: Could not copy transition vector" << std::endl;
-		delete transCountNew;
-		return 0;
-	}
-	transCountNew->totalCount += 1;
-	transCountNew->sPrime[sPrime.StateId].count += 1; 
-
-	New_KL_Div = KL_D(&transitionCount[s.stateId][a]);
-
-	ans = New_KL_Div - KL_Prior[s.StateId][a];
-	//Update Prior for next itteration.
-	KL_Prior[s.StateId][a] = New_KL_Div;
-
-	delete transCountNew;
-	return ans;
-}
-*/
 double ETPIG_alg::KL_D(StateTransitionVector *Theta, StateTransitionVector *ThetaHat)
 {
-	//Check for empty transition Vector
-	//if (Theta->totalCount == 0 || ThetaHat->totalCount == 0)
-	//if (Theta->sPrime.size() == 0 || ThetaHat->sPrime.size() == 0)
-		//return std::numeric_limits<double>::infinity();
 	double sum = 0;
 	int vectSize = Theta->sPrime.size();
 
@@ -244,10 +196,7 @@ double ETPIG_alg::KL_D(StateTransitionVector *Theta, StateTransitionVector *Thet
 		//calculate and add to sum.
 		//Transform integer counts into transition probabilites.
 		ThetaProb = GetProbability(Theta, sPrime);
-		//std::cout << "Successfully Called GetProbability" << std::endl;
 		ThetaHatProb = GetProbability(*ThetaHat, *ThetaHatState);
-		//if (sPrime < 4)
-			//std::cout << "numVectors, ThetaProb, ThetaHatProb: (" << vectSize << ", " << ThetaProb << ", " << ThetaHatProb << ")" << std::endl;
 
 		//EQUATION: Theta(sas') * Log_2((Theta(sas')/ThetaHat(sas')))
 		double ans = ThetaProb * log2(ThetaProb / ThetaHatProb);
