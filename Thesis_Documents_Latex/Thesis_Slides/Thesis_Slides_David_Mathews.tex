@@ -1,0 +1,154 @@
+\input{preamble}
+
+\title{PIG++: Improving PIG to Resist the Noisy-TV Problem}
+\subtitle{Research Proposal}
+\author{David Mathews}
+\institute[SDSMT]{South Dakota School of Mines and Technology}
+
+\bibliographystyle{IEEEtran}
+
+
+%\usetheme{Warsaw}
+\usepackage{bm}
+\usepackage{amsmath}
+%\usepackage{newtxtext,newtxmath}
+\usepackage{array}
+\usepackage{subfigure}
+\setlength{\extrarowheight}{2pt}
+
+\newcommand{\real}{\mathbb{R}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+\usepackage{calligra}
+\usepackage{hyperref}
+
+\begin{document}
+	
+	\begin{frame}{}
+		\maketitle
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Outline}
+		\begin{itemize}
+			\item Reinforcement Learning
+			\item Intrinsic Motivation
+			\item Noisy-TV
+			\item Predicted Information Gain(PIG)
+			\item PIG++
+			\item Methods
+			\item Simulation Details
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Reinforcement Learning}
+		\begin{itemize}
+			\item {Agent}
+			\item {Environment}
+			\item {$a \in A$ - Actions}
+			\item {$s \in S$ - States}
+			\item { $\Theta_{s,a,s'}$ - Transition probability from $s$ to $s'$ after taking $a$.}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Intrinsic Motivation}
+		\begin{itemize}
+			\item {Sparse environmental rewards make learning hard}
+			\begin{itemize}
+				\item {Robot Exploring a Maze}
+			\end{itemize}
+			\item {Internal reward, not external reward}
+			\begin{itemize}
+				\item {Reward agent for exploring!}
+				\item {Prone to noise}
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Noisy-TV}
+		\begin{itemize}
+			\item {State that creates noise when specific action is taken}
+			\item {State has Noisy-TV and remote control}
+			\begin{itemize}
+				\item {When control is pressed, flips to random channel on TV}
+				\item {High novelty, low value}
+			\end{itemize}
+			\item {Noisy-TV distracts most Intrinsic Reward systems}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Predicted Information Gain (PIG)}
+		\[D_{KL} (\Theta_{as\cdot} || \hat{\Theta}_{as\cdot}) := \sum_{s' = 1}^{ N} \Theta_{ass'} \log_{2}(\frac{\Theta_{ass'}}{\hat{\Theta}_{ass'}})   \]
+		
+		\[ PIG(a,s) := \sum_{s*} \hat{\Theta}_{ass^{*}} D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot}) \]
+		\begin{itemize}
+			\item {Exploration Algorithm using Information Theory}
+			\item {Uses KL-divergence to calculate difference in Probability Distributions}
+			\item {Takes the action that gives the agent the most information}
+			\item {Still suffers from Noisy-TV.}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{PIG++}
+		\[ PIG++ (a,s,s') := D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t-1} || \hat{\Theta}_{as\cdot}^{t-1}) - D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t} || \hat{\Theta}_{as\cdot}^{t}) \]
+		\begin{itemize}
+			\item {Goal: To make PIG less prone to Noisy-TV}
+			\item {How? Confirmation.}
+			\begin{itemize}
+				\item {After each time-step, recalculate PIG using new model}
+				\item {Compare calculations before and after time step}
+				\item {If information was learned, new calculation should be less than old one, since less information is left}
+				\item {Use this difference as Intrinsic reward instead}
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Methods}
+		\begin{itemize}
+			\item {Test PIG, PIG++, and Random Action Baseline}
+			\item {Methods will be run in parallel with same random numbers}
+			\item {Comparison Metrics}
+			\begin{itemize}
+				\item {Learning Rate (Time until algorithm has optimal solution)}
+				\item {Distraction Rate (How many times Noisy TV is used)}
+				\item {Internal Model Accuracy (KL-divergence between True Model and Agent's Model after given time period)}
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Simulation Details}
+		\begin{itemize}
+			\item {Gridworld Simulation}
+			\item {Random Starting state $s$ from set of starting states $S$}
+			\item {Every state has 4 actions (up, down, left, right)}
+			\item {Moving into wall will return agent to its current state}
+			\item {Moving into Noisy-TV will set Noisy-TV state variable to random number}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Questions?}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\end{document}
+							

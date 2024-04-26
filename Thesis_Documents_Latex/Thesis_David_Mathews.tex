@@ -1,0 +1,698 @@
+\documentclass[12pt]{thesis}
+
+% The LaTeX default font is Computer Modern Roman for text and
+% math. We will switch to times roman, because that is preferred by
+% the Graduate school.  However, you can comment the times fonts and
+% uncomment one (or more) of the others to choose a different font set.
+\usepackage{mathptmx}   % Times New Roman with matching math fonts
+% \usepackage{newcent}  % new century schoolbook font
+% \usepackage{bookman}  % bookman font
+% \usepackage{fourier}  % Utopia (text) and Fourier (math) font
+
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{makeidx}
+\usepackage{subfig}
+\usepackage{indentfirst}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+%% Uncomment the following two lines and comment out the third one
+%% if you want to use the Chicago Manual based bibliography.
+% \usepackage{thesiscitations}
+% \bibliographystyle{thesis}
+\bibliographystyle{ieeetr}
+
+%% Change ieeetr in the previous line to any bibliography style you
+%% like
+
+%% Uncomment next line if you want chapter titles centered (not
+%% approved by SDSMT graduate school)
+% \centertitles
+
+%% Uncomment next line to print a double-spaced draft version
+% \dsdraft
+
+%% Uncomment next line to print a single-spaced draft version
+% \ssdraft
+
+%% Uncomment next line if you are using makeindex to create an index
+% \makeindex
+
+%\begin{comment}
+%\doctype{thesis}
+%\title{A Compative Study of Gnus and Gnats: The Most Important Paper Ever Written}
+%\author{Harvey Finklebaum}
+%\degree{Doctor of Philosophy in Zoology}
+%\defensedate{April 4, 2013}
+%\gradyear{2013}
+%\department{Zoology}
+%\end{comment}
+
+\doctype{thesis}
+\title{PIG++: Improving PIG to Resist the Noisy-TV Problem}
+\author{David Mathews}
+\degree{Masters in Computer Science and Engineering}
+\defensedate{TBD}
+\gradyear{2024}
+\department{Electrical Engineering and Computer Science}
+
+% The following commands add a signature line for each person who needs
+% to sign the thesis/dissertation
+%\begin{comment}
+%\signatureline{Major Professor --- Dimm Whitt, Ph.D., Department of
+%  Zoology}
+%
+%\signatureline{Graduate Division Representative --- E.\ Nigma, Ph.D.,
+%  Department of Philosophy}
+%
+%\signatureline{Committee Member --- Chip Munk, Ph.D., Department of
+%  Zoology}
+%
+%\signatureline{Committee Member --- Gail Force, Ph.D., Department of
+%  Meteorology }
+%
+%\signatureline{Head of the Zoology Department --- Earl E. Byrd, Ph.D.}
+%
+%\signatureline{Dean of Graduate Education --- Raney Daze}
+%\end{comment}
+
+\signatureline{Major Professor --- Larry D. Pyeatt, Ph.D., Department of
+	Electrical Engineering and Computer Science}
+
+\signatureline{Graduate Division Representative --- Roger W Johnson, Ph.D.,
+	Department of Mathematics}
+
+\signatureline{Committee Member --- Christer Karlsson, Ph.D., Department of
+	Electrical Engineering and Computer Science}
+
+\signatureline{Head of the Electrical Engineering and Computer Science Department --- Jeffrey S. McGough, Ph.D.}
+
+\signatureline{Dean of Graduate Education --- Maribeth Price}
+
+\begin{document}
+
+\maketitle
+
+%% Comment the next line to remove the copyright notice.  Read the
+%% section on copyright in the Thesis and Dissertation Writing
+%% Instructions.
+\makecopyright % copyright must go BEFORE \preliminaries
+
+\preliminaries
+
+\begin{abstract}
+I present an improvement to the standard PIG algorithm to make it less prone to the Noisy-TV problem.
+\end{abstract}
+
+%% Uncomment the following if you want acknowledgements
+\begin{acknowledgments}
+  I would like to thank my advisor, Dr.\ Larry D.\ Pyeatt, for
+  all of the support and advice he has given me.
+\end{acknowledgments}
+
+
+%\begin{comment}
+%\tableofcontents
+%
+%\listoftables
+%
+%\listoffigures
+%\end{comment}
+
+
+%% Uncomment following lines if you want a list of symbols
+%% \gltitle{List of Symbols}
+%% \begin{genericlist}
+%% \begin{tabular}{ll}
+%%   $\mathcal{G}_t$ & Gnat\\
+%%   $\mathcal{G}_u$ & Gnu
+%% \end{tabular}
+%% \end{genericlist}
+
+%% Uncomment following lines if you want a list of keywords
+%% \gltitle{List of Keywords}
+%% \begin{genericlist}
+%% \noindent Gnat, Gnu
+%% \end{genericlist}
+
+%% Uncomment following lines if you want a dedication
+% \begin{dedication}
+% In loving memory of 
+% my grandmother.
+% \end{dedication}
+
+%% Uncomment following lines if you want a preface
+% \begin{preface}
+% Before we begin, just let me say one thing.
+% Gnat and gnu are both begin with ``gn,'' and
+% the purpose of this work was to see if there
+% are any other resemblances.
+% This thesis has taken 45 years of work, and
+% I don't have much time left in this world, but it
+% has been worth it.  When the time comes,
+% I would like to die as my grandmother did, peacefully in
+% her sleep, not screaming like the passengers in her car.
+% \end{preface}
+
+
+\body
+
+
+\chapter{Introduction}
+\section{Reinforcement Learning}
+Reinforcement Learning (RL) is a subset of Machine Learning where an agent takes actions within an environment to maximize some environmental reward. \cite{Sutton1998} This is a wide field that includes robotic arm manipulation, video game playing, path-planning, and many other areas.
+
+In RL, the environment is the problem space. In the case of an assembly line, the environment would contain the robot arm, the conveyor belt, the items on the belt, and other related aspects. Every time-step, the environment updates. Items move along the belt, the robot arm shifts, etc.
+
+The agent is the part of the program that learns and adapts to its environment. In the same case of the assembly line, the agent is the robotic arm. Every time-step, the agent receives its current state $s$ from the environment. In our current example, the state can be represented as the angle and rotation of the joints in the arm as well as whether the arm’s gripper is open or closed. Once the agent has received its current state from the environment, it decides what action $a$ to take from the set of all possible actions $A$. In our example, this could be telling the arm’s third motor to move to a specific angle and rotation or activating/releasing the gripper.
+
+When an agent takes an action, it gets feedback from the environment in the form of a reward. This reward is a measure of how good the agent’s choice was. For example, if the robot arm successfully created a product, it could get a reward based on the product’s quality. On the other hand, if the robot arm had smashed into a wall, the agent could get a negative reward known as a punishment. The agent can use these rewards to adjust its behavior to maximize the total reward it can get.
+
+Taken together, the system works as follows. The environment gives a state $s$ to the agent, who uses that state to determine the action $a$ it takes. The environment then gives a reward $r$ to the agent (usually with the next state $s’$) which it uses to learn whether it should take that action again next time it is in that state.
+
+By repeating this process over many time-steps, the agent will eventually learn the best actions to take in order to maximize the total reward.
+
+\subsection{Temporal difference learning}
+Temporal difference learning is a common method of Reinforcement Learning. Temporal difference learning can be done through either value iteration or Q-learning.
+\subsubsection{Value Iteration}
+In value iteration, the agent internally stores the value of every state $s$ it has visited. These values are stored in a value function $V(s)$ Whenever the agent takes an action $a$, it uses the reward from taking that action $r$ and the value of the new state $V(s')$ to update the value of $s$ according to the following function:
+
+\begin{equation}
+V(s) \leftarrow V(s) + \alpha [r + \gamma V(s') + V(s)]
+\label{TDLVF}
+\end{equation}
+
+Where $V(s)$ is the agent's stored value of state $s$, $r$ is the reward for transitioning from $s$ to $s'$, $\alpha$ is the learning rate, and $\gamma$ is the discount factor.
+
+The learning rate $\alpha$ determines how quickly change can happen to $V(s)$. In other words, how quickly the agent can update its internal model when it gets new data. The learning rate is bounded from $(0,1]$. Large values of $\alpha$ (close to 1) cause the agent to rapidly adjust to changes as it finds them. However, this also makes it hard for the agent to hone in on the optimal solution, as it is too easy to over correct. Low values of $\alpha$ on the other hand, take a long time to learn, but approach optimal solutions much more closely in the end. Commonly, reinforcement learning algorithms will reduce the learning rate over time so the agent learns quickly to begin with and then slows down as it approaches its target. This can be done by using the speed of learning (The portion of \ref{TDLVF} inside the square brackets) to calculate $\alpha$. As the agent's value of $V(s)$ approaches the true value of $V(s)$, $\alpha$ will decrease, causing the agent to more slowly approach the true value and avoid jumping over it.
+
+The discount factor $\gamma$ determines what portion of the next state's value $V(s')$ is used to update the current state's value $V(s)$. In other words, $\gamma$ represents how much the agent values future states' reward compared to the immediate reward $r$. The discount factor $\gamma$ is bounded from $(0,1]$. Large values of $\gamma$ (close to 1) cause the agent to value future rewards more. This makes the agent more likely to ignore short-term gains in exchange for long-term payout. On the other hand, small values for $\gamma$ cause the agent to disregard the value of future states, focusing instead on immediate short-term gains.
+\subsubsection{Q-learning}
+Instead of assigning a value to every state $V(s)$, the agent can assign a value to every state-action pair $Q(s,a)$. Each of these is called a Q-value.
+
+Using Q-values instead of value iteration makes some of the math and implementation much easier. This is especially true in stochastic environments.
+
+Stochastic environments have multiple possible resulting states for a single state-action pair. For example, if a robot attempts to open a door there might be a 40\% chance that the robot fails to open the door, a 40\% chance that the door opens successfully, and a 20\% chance that the robot falls over and hurts itself. If the agent was using a value function $V(s)$ it would have to take all three of those resulting end states, their rewards, and the chance of them occurring into account when trying to determine how valuable the current state is. What's worse, that was only one action that could be taken from the current state!
+
+Using Q-values instead means that the value is on the portions of the environment that the agent can control. Every action $a$ is a potential choice the agent could take. $Q(s,a)$ is a direct representation of how valuable a given action $a$ is when in a known state $s$. Q-learning shifts the focus of the agent from the situations it could end up in to the choices it could make in a given situation. In the example above, Q-learning would still take into account the stochastic transitions and different rewards, but that is stored in the value of the action, not the value of the current state.
+
+When using Q-learning, the temporal difference equation becomes as follows:
+\begin{equation}
+	Q(s,a) \leftarrow Q(s,a) + \alpha [r + \gamma *  \argmax_{a'} Q(s',a') + Q(s,a)]
+	\label{TDQVF}
+\end{equation}
+
+Where $Q(s,a)$ is the Q-value of the best action in the current state $s$ and $Q(s',a')$ is the Q-value of the best action to be taken from the new state $s'$. $r$ is the reward for transitioning from $s$ to $s'$, $\alpha$ is the learning rate and $\gamma$ is the discount factor.
+
+\subsection{Intrinsic reward systems}
+Although the above explanation of Reinforcement Learning works in many cases, it struggles to solve problems where environmental rewards are infrequent or spread sparsely throughout the environment. \cite{DBLP:journals/corr/abs-1908-06976}
+
+One simple example of this is the case of a robot stuck in a maze. Since the robot only gets rewarded when it successfully exits the maze, the robot has no feedback until it succeeds for the first time. For any maze of significantly large size, it is practically impossible for the robot to randomly stumble upon the correct solution. As such, a robot depending on external (environmental) reward to learn is not sufficient to solve this problem.
+
+Intrinsic rewards are one method to allow agents to learn without the presence of environmental rewards. By letting the agent reward itself when it learns about the environment, the agent can learn to maximize its exploration of its environment. Once the agent has explored their environment sufficiently, they can switch to a different algorithm to take advantage of their knowledge. \cite{Rein:VIME}
+
+One simplistic intrinsic reward system is to reward the agent whenever it finds a state it has never encountered before.  \cite{DBLP:journals/corr/TangHFSCDSTA16} This encourages the agent to seek out new states, allowing it to explore its environment more efficiently. This method has problems as discussed later but is significantly better than random exploration. (Taking random actions)
+
+\section{Noisy TV Problem}
+The Noisy TV Problem is a particularly difficult scenario when using intrinsic reward systems in Reinforcement Learning. \cite{DBLP:journals/corr/abs-2008-04388} The problem is as follows: What if within the environment there was a TV with a remote. Whenever the agent was in front of the TV it could press the remote to switch the TV to a random channel.
+
+Many intrinsic reward systems fall prey to this scenario. For example, the intrinsic reward system above that rewards finding new states would consider the TV to be extremely valuable since all it takes is a single action to find a new state! This is significantly better than exploring around over multiple time-steps to find new areas not seen before. What makes this problem particularly difficult is that the agent cannot tell the difference between moving from state to state around the problem space and pressing the button to flip the channel. Both of these things are taking an action based on a given state.
+
+Other intrinsic reward systems such as count-based methods, probabilistic methods, and even memory methods also fall prey to this problem.  \cite{DBLP:journals/corr/abs-1908-06976}
+
+\section{Predicted Information Gain (PIG)}
+PIG is an algorithm that uses information theory to maximize exploration of the environment. \cite{10.3389/fncir.2013.00037} PIG functions by predicting how much information about the environment the agent will learn for each action it could take, then taking the action with the most information gain. This means that PIG focuses on creating the best model of the world it can, rather than maximizing the reward obtained from the environment.
+
+\subsection{KL-Divergence}
+To determine the amount of information that can be gained from entering a new state, PIG uses the Kullback-Leibler (KL) divergence. The KL-divergence determines the similarity of two probability distributions. In our case, it is the average amount of information that would be lost if we represented one probability distribution with code optimized for the other distribution.
+
+The equation for the KL-divergence is as follows:
+\[D_{KL} (\Theta_{as\cdot} || \hat{\Theta}_{as\cdot}) := \sum_{s' = 1}^{ N} \Theta_{ass'} \log_{2}(\frac{\Theta_{ass'}}{\hat{\Theta}_{ass'}})   \]
+
+Where $\Theta$ is the true probabilities of state transition from state $s$ to state $s'$ by taking action $a$, $\hat{\Theta}$ is the agent's estimation of $\Theta$ based on its experiences, and $N$ is the number of valid possible state transitions from $s$ to $s'$.
+
+\subsection{Information Gain/Missing Information}
+PIG calculates the amount of information that would be gained when taking a specific action by averaging the amount of information that each state transition would give multiplied by the chance of achieving that state transition. The equation is as follows:
+
+\[ PIG(a,s) := E_{s^{*},\Theta|\vec{d}} [I_{G}(a,s,s^{*})] = \sum_{s*} \hat{\Theta}_{ass^{*}}D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot}) \]
+
+Where $s^{*}$ is a valid resulting state due to taking action $a$ in state $s$ and $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is the updated model of $\hat{\Theta}_{as\cdot}$ if a transition from $s$ to $s^{*}$ was observed.
+
+Intuitively, $D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot})$ is a measure of how different our new model would be compared to our current model if we successfully transitioned from $s$ to $s^{*}$.
+
+Since the above equation is fully dependent on our internal model rather than the true model of the environment, it is updated whenever new data is learned and can be applied even when the agent is unaware of the true nature of the environment (As is the case in most real-world problems). In fact, the above equation can even be applied when the agent has no understanding of the problem space whatsoever but merely has a method of observing and interacting with its environment.
+
+\section{Thesis Statement}
+The PIG algorithm still falls prey to the Noisy TV problem. When in the Noisy TV state, the PIG algorithm will predict that there is a lot of information to be gained by using the remote. This is because pressing the remote takes the agent to a state significantly different from the state it is currently in, making the KL-divergence between the two states large. Even though the PIG algorithm takes the weighted average of the information gain based on how likely it is to get to that state, it will still consider pressing the remote to be valuable because every state it could reach through the Noisy TV has a high KL-divergence.
+
+The largest cause of this problem is that there is no confirmation that information has actually been learned. The PIG algorithm predicts future information gain based on it’s current data, but it never confirms that its prediction was correct.
+
+As such, I suggest changing the PIG algorithm to make it more robust to the Noisy TV problem. After each time-step, the new algorithm will re-calculate the Predicted Information Gain with the updated models from including the previous step. It will then compare the prediction from before with the new prediction. If information was actually learned the new prediction will be lower then the previous prediction as the total amount of information left to be learned has decreased. This decrease in unlearned information will then be normalized and used as an intrinsic reward.
+
+When this new method, Temporal Predicted Information Gain (TPIG), encounters the Noisy TV problem it will quickly realize that although the TV looks like it will provide a large amount of information, it actually provides very little that is useful.
+
+\section{Methods}
+%Include methods for testing to determine Thesis statement validity.
+To determine the validity of the TPIG method, a grid-world simulation (described below) will be created. The original PIG algorithm, the TPIG algorithm, and a random action baseline will be tested on the simulation and their results compared. $\epsilon$-greedy versions of the PIG and TPIG algorithms will also be tested.
+
+\subsection{Metrics}
+The metrics for comparison will be the learning rate (How fast the algorithms approach an optimal solution), the distraction rate (How many times the agent views the Noisy TV), and the internal model accuracy (The KL-divergence between the true model and the agent's model after a given amount of time).
+
+%All three agents will start in the same state. All stochastic transitions will use the same randomly generated probability for all three agents. This allows for a more accurate comparison as each algorithm would have the exact same outcome if they chose the same actions.
+
+
+%The internal model accuracy is the missing Information equation.
+%The learning rate is the time until the model can choose the optimal path to get to a given location.
+%The distraction rate is given over all episodes. (Use same time scale as internal model accuracy uses)
+%Stop training when internal model is perfectly accurate? (Not possible due to rounding errors)
+\begin{figure}
+	\begin{center}
+	\includegraphics[scale=0.75]{"images/TestSim.pdf"}
+	\includegraphics[scale=0.75]{"images/Simulation.pdf"}
+	\includegraphics[scale=0.75]{"images/NoTvSim.pdf"}
+	\end{center}
+	\caption{Three example simulations. The semi-circles represents the Noisy-TV}
+	\label{Fig:Sim}
+\end{figure}
+\subsection{Simulation}
+The simulation will be a grid-world. Every episode, a random state will be selected from a set of starting states. All three agents will start in that randomly selected state. There is no goal state; instead, each episode will run for a given number of time steps before terminating.
+
+In every state the agent will have four actions, one for each direction the agent can travel. Moving into a wall will return the agent to its current state. One of the states will have a Noisy TV that is activated when the agent moves into the TV. Activating the Noisy TV will randomize the Noisy-TV variable in the state space.
+
+The simulation used is shown in figure 
+\figurename~\ref{Fig:Sim}
+
+%True model and internal model for KL-divergence comparisons does not take Noisy-TV variable into account. This prevents exploding KL-divergences and represents how the Noisy TV has to effect on state transitions and is just noise.
+
+\chapter{Methods}
+\section{Simulation}
+The simulation is a grid world. Agents can move in any of the four cardinal directions. If an agent walks into a wall, it does not change states. Every simulation is stored in a file for later access and use.
+\subsection{Implementation}
+The simulation program is capable of reading in a simulation from a special ".sim" file. The user can then forcefully change the agent's location or use the built in "takeAction" function to move the agent according to the transition rules.
+
+The transition rules are defined inside the simulation class. By default, there is a 90\% chance of taking the desired action and a 10\% chance of staying in the same state instead. Moving into a wall has a 100\% chance of leaving the agent in the same state. Moving into a Noisy-TV is the same as moving into a wall, but the noise variable in the state is incremented, simulating how the Noisy-TV looks different every time the remote is used to flip the channel.
+
+Due to the complications of data storage, the current simulation stores all transitions as a two-dimensional vector that is indexed by a state-action pair. (s,a) pair. This means that noise is not taken into account in the starting state when indexing observed state transitions.
+
+This issue is not significant since the only states with noise are the Noisy-TV states and all state comparisons using the Noisy-TV states are done using functions that take the noise into account.
+
+A more technically accurate representation would have each Noisy-TV state transition be stored relative to the noise of the state that the agent moved from. Essentially having each state transition with a noisy state be stored in its own portion of the (s,a) indexed array. However, since the noise has no effect on the actual transitions of the simulation, storing it in this way is impractical and incredibly confusing.
+
+\subsection{Diagrams}
+\section{Policies}
+Policies define how the agent selects an action to take based on its internal model. The variable $\pi$ is used to denote the policy. In mathematical terms: $\pi(a | s)$
+\subsection{Implementation}
+Every policy has functions to select actions and update their internal model. The policy selects an action $a$ based on its current state $s$. This action $a$ is then passed to the simulation which returns the new state $s'$ that the agent transitions to. This set of $(s,a,s')$ defines a unique state transition.
+
+The policy can use a state transition to update its internal model. When it does so, it adds the state transition to its list of observed transitions.
+\subsection{Random Walk}
+The Random Walk algorithm always chooses a random action. Each action has an equal probability (25\%) of being chosen.
+
+The Random Walk algorithm observes state transitions and updates its internal model as normal, but never uses those observations to affect its decision process.
+
+In this paper, the Random Walk algorithm is used as a baseline for algorithm comparisons.
+\subsection{Predicted Information Gain (PIG)}
+The PIG algorithm calculates the predicted information gain of every action it could take based on its model, then selects the action with the largest potential gain.
+
+It does this by using the Kullback-Leibler divergence to estimate how much information remains to be gathered from each $(s,a)$ pair. 
+
+The Kullback-Leibler divergence is defined as follows:
+\[D_{KL} (\Theta_{sa\cdot} || \hat{\Theta}_{sa\cdot}) := \sum_{s' = 1}^{ N} \Theta_{sas'} \log_{2}(\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}})   \]
+Where $\Theta_{sa\cdot}$ is the true transition probabilities when starting in state $s$ and taking action $a$, $\hat{\Theta}_{sa\cdot})$ is the agent's estimated transition probabilities when starting in state $s$ and taking action $a$  based on the transitions they have observed and stored.
+
+Similarly, $\Theta_{sas'}$ is the true transition probability of a transition from state $s$ to state $s'$ when taking action $a$ and $\hat{\Theta_{sas'}}$ is the agent's estimated transition probability from state $s$ to state $s'$ when taking action $a$ based on the transitions they have observed and stored.
+
+The Kullback-Leibler divergence is often used in information theory to estimate the information difference from one model to another. In the PIG algorithm, the Kullback-Leibler divergence is used to estimate the potential information that could be gained from taking a specific action.
+This is done through the following equation:
+\[ PIG(a,s) := \sum_{s*} \hat{\Theta}_{ass^{*}}D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot}) \]
+
+Where $s^{*}$ is a potential future state that could be transitioned to and $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is the observed transition probabilities from state $s$ when taking action $a$ after a transition $(s,a,s^{*})$ has been observed and used to update the internal transition probabilities in the model.
+
+In an ideal scenario, the true transition probabilities $\Theta_{as\cdot}$ would be used instead of $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ for this calculation. However, since the agent does not have access to the true transition probabilities $\Theta_{as\cdot}$, $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is used as an estimate to allow the agent to learn.
+
+Conceptually, the agent's estimate $\hat{\Theta}$ will approach the true distribution $\Theta$ as the agent gathers more data. As the gathered data approaches infinity, the agent's estimate $\hat{\Theta}$ will approach the true distribution $\Theta$. In mathematical terms:
+
+\[ \lim_{d \rightarrow \infty} D_{KL}( \Theta_{as\cdot} || \hat{\Theta}_{as\cdot}) = \lim_{d \rightarrow \infty} \sum_{s' = 1}^{ N} \Theta_{sas'} \log_{2}(\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}}) = 0\]
+
+This can be clearly seen, as $\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}}$ approaches 1 as more data is gathered and the $\lim_{x \rightarrow 1} \log_{2}(x)$ is 0.
+
+The Kullback-Leibler divergence and (consequently) PIG algorithm do have some inherent limitations that needed to be handled in physical implementation.
+\begin{itemize}
+	\item Unobserved transitions in $\Theta$
+	\item Predicted Transitions in PIG always match known state transitions.
+\end{itemize}
+
+\subsubsection{Unobserved Transitions}
+Due to the nature of the Kullback-Leibler divergence, every state that exists in $\Theta$ but not in $\hat{\Theta}$ will produce a result of $\infty$, as the $\lim_{x \rightarrow 0} \frac{\Theta}{x} = \infty$. This means that the Kullback-Leibler divergence is only valid if $\Theta$ and $\hat{\Theta}$ are one-to-one over their probability distributions.
+
+Thankfully, this is not an issue when running the PIG algorithm in practice. Since $\hat{\Theta}_{sas^{*}}$ is 0 when $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is transitioning to a new (undiscovered) state $s^{*}$, we can shortcut past the actual calculation whenever  $\hat{\Theta}_{as\cdot}$ and their predicted counterpart $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ are different sizes, returning a 0 instead.
+
+This method also applies when the algorithm is just beginning and $\hat{\Theta}_{as\cdot}$ is empty.
+
+This does become an issue when gathering the data for algorithm comparisons, but the specifics of that will be discussed in the results section.
+
+\subsubsection{PIG Closed Minded Models}
+The Kullback-Leibler divergence returns 0 when the probabilities of its two inputs are the same. However, this provides a problem when the PIG algorithm is learning.
+
+When the PIG algorithm observes a transition for the first time, it stores the probability of that transition $(s,a,s')$ occurring as 100\%. This is regardless of what the true transition probability is. When PIG has explored for a while and comes back to that state $s$, it will predict that the transition $(s,a,s')$ is still 100\% when it takes action $a$ regardless of what the true probability actually is. Since the predicted probability and the measured probability of $(s,a,s')$ are both the same (100\%) the Kullback-Leibler divergence will return 0 and PIG will consider the related action $a$ as being less valuable than other actions.
+
+This makes the PIG algorithm focus on areas it has already explored and found variance in, to the detriment of exploring anywhere it has only touched once.
+
+To fix this issue, the PIG algorithm in my implementation initializes the total number of observed transitions to 1 instead of 0. In other words, the number of total transitions the agent has observed is one less than the number of transitions they \b{think} they have observed.
+
+Intuitively, I have tricked the PIG algorithm into thinking it has observed a transition that does not exist. As such, the PIG algorithm will always think that there is more to learn about every state-action pair $(s,a)$ it has ever encountered.
+
+As a result, the probabilities of the two inputs of the Kullback-Leibler divergence function will never be the same, and the PIG algorithm will never stop exploring.
+
+Although this method does modify the original PIG algorithm, the PIG algorithm will still converge to a Kullback-Leibler divergence of 0. As such, I feel this change is justified.
+
+\subsubsection{Other PIG Comments} 
+Due to the nature of the Kullback-Leibler divergence, this means that the PIG model is drawn to new state transitions whenever possible, as there is more information to be gained there.
+
+As PIG continues to explore, it will focus on areas that it has a poor model for and avoid areas where its model doesn't change.
+
+There are advanced versions of PIG that predict the information gain for multiple time steps in the future, but the version implemented here only predicts a single time step in the future. 
+\subsection{Erratic Predicted Information Gain (EPIG)}
+The EPIG algorithm is exactly the same as the PIG algorithm, except that it follows an $\epsilon$-greedy model.
+
+This means that whenever EPIG selects an action, it has an $\epsilon$\% chance to select a different action instead.
+
+A table of epsilon values is shown below.
+
+Since EPIG occasionally takes a different action than the ``optimal'' one, it is capable of escaping from infinite loops such as the Noisy-TV.
+
+\subsection{Temporal Predicted Information Gain (TPIG)}
+The TPIG algorithm uses the Kullback-Leibler Divergence to calculate how much information is in a given $(s,a)$ pair. After observing a state transition $(s,a,s')$ it calculates the amount of information there is remaining to be learned both before and after the transition is used to update its internal model.
+
+TPIG then takes the difference between the two calculations. This difference is used as a reward to determine future actions.
+
+The reward function is as follows:
+\begin{equation}
+	Reward(s,a,s') := D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t-1} || \hat{\Theta}_{as\cdot}^{t-1}) - D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t} || \hat{\Theta}_{as\cdot}^{t})
+\label{eq:TPIGReward}
+\end{equation}
+
+Where $\hat{\Theta}_{as\cdot}^{t-1}$ is the transition probabilities given before the state transition has been updated and $\hat{\Theta}_{a,s \rightarrow s'}^{t-1}$ is the predicted transition probabilities if the $(s,a,s')$ transition was observed.
+
+After the $(s,a,s')$ transition has been used to update the model, $\hat{\Theta}_{as\cdot}^{t}$ is the new transition probabilities after the update. $\hat{\Theta}_{a,s \rightarrow s'}^{t}$ is the predicted transition probabilities if a second transition $(s,a,s')$ was observed.
+
+The reward is then used to update the internal values of the $(s,a)$ pairs. These internal values known as Q-values are used to determine the optimal action to take.
+
+The formula for updating the Q-values is a standard temporal difference equation as shown below:
+
+\[Q_{new} = Q_{old} + \alpha(Reward + \gamma Q_{new} - Q_{old})\]
+
+Where $Q_{old}$ is the Q-value of the best action in the current state $s$ and $Q_{new}$ is the Q-value of the best action to be taken from the new state $s'$. The learning rate $\alpha$ and discount factor $\gamma$ are both set to $0.9$.
+
+Q-values are initialized to 1.
+
+To determine which action to take, TPIG checks its internal model of Q-values. The action $a$ that has the highest Q-values for its current state $s$ is chosen. This is formalized in the following equation:
+
+\[ TPIG(s) = \argmax_a  Q(s,a)\]
+
+\subsubsection{TPIG and Infinity}
+In the initial exploration for TPIG, the Kullback-Leibler divergence will return $\infty$. This is because there are no known transitions in $\hat{\Theta}_{sa\cdot}$. To prevent these results from breaking the algorithm, any infinities returned by the Kullback-Leibler divergence is replaced with a 0 when the Reward is calculated.
+
+To avoid punishing the model when discovering new states, the reward is set to 0 if it is a negative number.
+
+Similarly, any Q-values that are infinity are normalized to 0 before the function to update the Q-values is called.
+
+\subsubsection{Conceptual Explanation}
+Whenever TPIG observes a state transition $(s,a,s')$, it uses the Kullback-Leibler divergence to calculate how much information there is left to be gained. It does this calculation both before and after it updates its internal model with the observed transition.
+
+TPIG then compares the amount of information there was before and after its update. If TPIG learned something, the total information left to be learned should be less after the update then before. TPIG uses the value of this decrease to reward itself. The faster TPIG learns from taking an action, the more TPIG values that action.
+
+Simply, TPIG takes the action that it has experienced will make it take the most information from its environment. This is in contrast to PIG which takes the action that it predicts will teach it the most.
+
+\subsection{Erratic Temporal Predicted Information Gain (ETPIG)}
+The ETPIG algorithm is exactly the same as the TPIG algorithm, except that it follows an $\epsilon$-greedy model.
+
+This means that whenever EPIG selects an action, it has an $\epsilon$\% chance to select a different action instead.
+
+A table of epsilon values is shown below.
+\subsection{Notes}
+I initialized the starting states for PIG and EPIG to 1 instead of 0. This is because the Kullback-Leibler Divergence does not work well when initialized to 0. By making the policy start with an inflated transition counter, the policy never predicts a starting transition probability of 1. This encourages the algorithm to explore by tricking it into thinking it has never fully explored a given state.
+
+As the agent learns, its predicted probabilities for the state transitions will approach the true probabilities due to the law of large numbers.
+
+Due to space restrictions, I stored transitions in a two-dimensional array accessed by their state id and action. This causes all policies to consider noisy-TV states as being adjacent to the "base state" of the noisy-TV room.
+
+\chapter{Results}
+Each of the above policies were tested on three criteria.
+\begin{figure}[b!]
+	\begin{center}
+	\includegraphics[scale=0.75]{"images/Distraction_Rate.pdf"}
+	\end{center}
+	\caption{Distraction Rate of all Five Policies}
+	\label{Fig:DRFP}
+\end{figure}
+\begin{itemize}[]
+	\item Distraction Rate: Total number of times algorithm used the Noisy-TV
+	\item Learning Rate: Number of unobserved state transitions in the simulation.
+	\item Model Accuracy: Accuracy of policy model with respect to the true model.
+\end{itemize}
+
+\begin{figure}
+	\begin{center}
+	\includegraphics[scale=0.75]{"images/Missed_States.pdf"}
+	\end{center}
+	\caption{Missed States of all Five Policies}
+	\label{Fig:MSFP}
+\end{figure}
+\section{Distraction Rate}
+\figurename~\ref{Fig:DRFP} is a comparison of the distraction rate of all five policies. The fewer times a given algorithm is distracted by the Noisy-TV the better.
+
+The baseline Random Walk algorithm was distracted the least. The PIG algorithm was distracted heavily by the Noisy-TV. The TPIG algorithm, in comparison, was initially distracted but quickly learned to ignore or avoid the distraction. As time passed, the TPIG algorithm approached Random Walk in how effectively it ignored the Noisy-TV.
+
+Both PIG and TPIG were improved with the adding of an $\epsilon$-greedy component. This is expected, as adding an $\epsilon$ chance to randomly move allows the algorithm to "Free" itself from distracting loops.
+
+\begin{figure}
+	\begin{center}
+	\includegraphics[scale=0.75]{"images/Model_Accuracy.pdf"}
+	\end{center}
+	\caption{Model Accuracy of all Five Policies}
+	\label{Fig:MAFP}
+\end{figure}
+\section{Learning Rate}
+\figurename~\ref{Fig:MSFP} is a comparison of the learning rate of all five policies. The faster the algorithm decreases, the faster it is learning about its environment.
+
+Compared to the Random Walk baseline, the PIG algorithm performed better in all cases. The TPIG algorithm, in comparison, initially performed worse than both PIG and the Random Walk. For large time-steps, however, the TPIG algorithm performs better than both Random Walk and PIG.
+
+The $\epsilon$-greedy implementations had no significant impact on the base algorithms.
+
+
+\section{Model Accuracy}
+\figurename~\ref{Fig:MAFP} is a comparison of the model accuracy of all five policies. This was done through taking the Kullback-Leibler divergence between the policy's model and the true model. Since the Kullback-Leibler divergence returns infinity in the case where a state is in the true model but not the policy's model, these values were ignored and replaced with 0's in the calculations. Lower values are better, but every missing state would add to the KL-divergence if it was found.
+
+Compared to the Random Walk baseline, the PIG algorithm performed worse. However, since the PIG algorithm had more states known at each of these time-steps as shown in figure 3.2? the two results are more comparable. An exact comparison is difficult due to this.
+
+In contrast, the TPIG algorithm performed better than both the PIG and Random Walk algorithms for all time-steps. This is particularly notable since the TPIG algorithm surpassed both the PIG and Random Walk algorithm in terms of states found after time-step 400. This means that TPIG had a better Model Accuracy than both PIG and Random Walk while also having explored faster.
+
+The $\epsilon$-greedy implementations performed equally well to the base algorithms for large amounts of time. There was a small increase in performance for EPIG over PIG, but ETPIG had no notable improvement over TPIG for large values of time.
+
+
+
+\section{Epsilon Values}
+The effect of different values for epsilon is shown in the following set of graphs. (figures 3.4?-3.9?)
+
+Epsilon Values were tested in increments of 10\%.
+
+In general, higher values of $\epsilon$ performed better for the EPIG algorithm, but lower values of $\epsilon$ performed better for the ETPIG algorithm.
+\begin{figure}[p]
+	%Figure~\ref{images/Epsilon_Graphs.pdf}
+	%\includegraphics{images/Epsilon_Graphs.pdf}
+	\includegraphics[scale=0.5]{"images/Epsilon_Distractions_EPIG.pdf"}
+	\includegraphics[scale=0.5]{"images/Epsilon_Distractions_ETPIG.pdf"}
+	\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_EPIG.pdf"}
+	\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_ETPIG.pdf"}
+	\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_EPIG.pdf"}
+	\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_ETPIG.pdf"}
+	%Figure~\ref{figure:photos}
+	%Figure
+\end{figure}
+\chapter{Conclusions}
+\chapter{Appendix A}
+
+%\begin{comment}
+%\chapter{Previous Work}
+%
+%
+%There has been a lot of previous work that is not at all like my work.
+%For example,
+%% The following if-then-else allows us to get good results with
+%% any bibliography/citation style.
+%\ifthesiscitations
+%\citeN{Kringle} % if we are using the thesiscitations style
+%\else
+%Kringle~\cite{Kringle} % if we are using a more primitive citation style
+%\fi
+%showed that apples and goats have almost
+%nothing in common, other than both being red.  The major problem with
+%Kringle's study is that he used a goat that had been spray painted
+%red, and his apple was a golden delicious variety.  Criticism of
+%Kringle's methods has been harsh, and so far, no one has been able to
+%replicate his results.
+%
+%Several researchers have compared trout to
+%eagles~\cite{Simmons,Sheppard}.  The consensus that has emerged is
+%that they are quite different, and only an idiot would try to eat an
+%eagle~\cite{Idiot}.
+%
+%\chapter{Methods}
+%In this chapter, I will present the methods for my comparison, and
+%fill in with a lot of gibberish.  For instance, I will say things like
+%``Gnats and Gnus come in twos'' in order to fill space and make my
+%thesis seem longer than it really is.  This is a tactic used by some
+%people to hide the fact that their research is worthless.  The idea is
+%that if the thesis is long enough and boring enough, the thesis
+%comittee members will go to sleep every time they try to read it.
+%
+%Another thing that I may do is to use very long words, such as
+%onomatopoeia, for no apparent reason.  By employing voluminous
+%instances of obfuscatory and expansive vocables, the lack of
+%quintessence of this monograph can be adumbrated from all but
+%the most erudite, didactic, and scholarly bibliophiles.
+%
+%
+%\chapter{Results}
+%My research had fabulous results. I will now tell you about
+%the results, because they are the best!  You are not going
+%to believe how good my results are.
+%
+%\section{Visual comparison}
+%%\index{comparison!visual}
+%
+%\begin{table}
+%\caption{Results of visual comparison studies.}
+%\begin{center}
+%  \begin{tabular}{|c|c|}
+%    \hline
+%    \bf Categories & \bf Percent Correct\\
+%    \hline
+%    \hline
+%    insect/mammal & 76\\
+%    \hline
+%    gnat/gnu & 69\\
+%    \hline
+%  \end{tabular}
+%\end{center}
+%\label{table:comp1}
+%\end{table}
+%
+%The first test that I performed was a visual comparison of gnats and
+%gnus.  First, I went on the internet and downloaded several thousand
+%pictures of gnats, and one picture of a gnu.  Then, I had two
+%volunteers compare them and categorize them as insect
+%%\index{insect}
+%or mammal.
+%%\index{mammal}
+%Next, I selected another group of volunteers and
+%had them classify the photographs as either gnat or gnu.
+%
+%
+%\begin{sidewaysfigure}
+%\begin{center}
+%\subfloat{\resizebox{0.45\textheight}{!}{\includegraphics{images/gnu.pdf}}}
+%\subfloat{\resizebox{0.45\textheight}{!}{\includegraphics{images/gnat.pdf}}}
+%\end{center}
+%\caption{Photographs of a gnu (left) and a gnat (right).}
+%\label{figure:photos}
+%\end{sidewaysfigure}
+%
+%The results of this comparison are shown in Table~\ref{table:comp1}.
+%As can be seen, both volunteers (myself and my advisor) were able to
+%correctly classify most of the photographs.  As a result, we gave each
+%other little gold stars.
+%For those who are interested, Figure~\ref{figure:photos} shows the gnu
+%photograph and one of the gnat photographs.
+%
+%\section{Comparison by Size}
+%\index{comparison!size} As can be seen from
+%Figure~\ref{figure:photos}, photographs of gnats are slightly larger
+%than photographs of gnus.  This leads us to believe that
+%statistically, gnats are slightly larger than gnus.  Mathematically,
+%we express this as follows:
+%\begin{equation}
+%S(\mathcal{G}_t) > S(\mathcal{G}_u) \forall
+%\mathcal{G}_t,\mathcal{G}_u,
+%\end{equation}
+%where $\mathcal{G}_t$ is a photograph of a gnat and $\mathcal{G}_u$ is
+%a photograph of a gnu.  The $S()$ function calculates the ``size'' of
+%the photograph.
+%
+%\chapter{Conclusions}
+%
+%Well, there you have it.  My advisor and I were able to tell the
+%difference between a photograph of a gnat and a gnu most of the time.
+%Also, gnats are larger than gnus, and therefore, they are
+%significantly different.
+%
+%In the future, we plan to apply the techniques developed in this
+%research to answer the age old question of whether dogs and ducks are
+%the same thing.
+%
+%\supplementaries
+%
+%\end{comment}
+\bibliography{Thesis_David_Mathews}
+%\begin{comment}
+%
+%\begin{appendices}
+%
+%\appendix{Appendix A} Well, I really have nothing more to say,
+%but wanted to have an appendix.
+%
+%\end{appendices}
+%
+%%% Uncomment the following lines if you want to create a glossary
+%% \begin{gloss}
+%% I don't have a glossary either, but this is what the page would look
+%% like if I did.
+%% \end{gloss}
+%
+%
+%%% uncomment following lines if you want to create a list of abbreviations
+%% \begin{abbreviations}
+%% gnu is abbreviated to gnu\\
+%% gnat is abbreviated to gnat
+%% \end{abbreviations}
+%
+%%% uncomment next line if you used makeindex to make an index
+%%\printindex
+%
+%\begin{vita}
+%
+%  
+%  Format the vita page according to the following graduate school requirements:
+%
+%A vita page, not over one page in length, is to be included as the
+%last page of all theses and dissertations deposited in the Devereaux
+%Library. The vita is to be written in the third person using
+%professional style and could contain the following information
+%(although you may wish to omit A and B if concerned about identity
+%theft):
+%\begin{enumerate}[label=\Alph*.]
+%\item Place and date of birth.
+%
+%\item Place and date of high school graduation.
+%
+%\item Place and date of college graduation—with degree and major.
+%
+%\item Place and date of receipt of master’s degree—with major.
+%
+%\item Vocational and professional experience (not summer jobs)—including dates, nature of position, and school or organization.
+%
+%\item Military experience, with indication of professional relevance—if any.
+%
+%\item Scholarly publications, exhibits of creative work, membership in professional organizations and honorary societies.
+%\end{enumerate}
+%  
+%
+%\end{vita}
+%
+%
+%\end{comment}
+\end{document}
