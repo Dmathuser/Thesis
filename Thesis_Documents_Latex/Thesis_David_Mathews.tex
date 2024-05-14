@@ -183,7 +183,7 @@ Taken together, the system works as follows. The environment gives a state $s$ t
 By repeating this process over many time-steps, the agent will eventually learn the best actions to take in order to maximize the total reward.
 
 \subsection{Temporal difference learning}
-Temporal difference learning is a common method of reinforcement learning. Temporal difference learning can be done through either value iteration or Q-learning.
+Temporal difference learning is a common method of reinforcement learning. In temporal difference learning, the agent uses the reward $r$ found to update the value of previous states it has traveled through. The number of previous states that are updated is the value of $N$ in $N$-step temporal difference learning. The value of $N$ is assumed to be $1$ for this study. Temporal difference learning can be done through either value iteration or Q-learning.
 \subsubsection{Value Iteration}
 In value iteration, the agent internally stores the value of every state $s$ it has visited. These values are stored in a value function $V(s)$ Whenever the agent takes an action $a$, it uses the reward from taking that action $r$ and the value of the new state $V(s')$ to update the value of $s$ according to the following function:
 
@@ -198,9 +198,7 @@ The learning rate $\alpha$ determines how quickly change can happen to $V(s)$. I
 
 The discount factor $\gamma$ determines what portion of the next state's value $V(s')$ is used to update the current state's value $V(s)$. In other words, $\gamma$ represents how much the agent values future states' reward compared to the immediate reward $r$. The discount factor $\gamma$ is bounded from $(0,1]$. Large values of $\gamma$ (close to 1) cause the agent to value future rewards more. This makes the agent more likely to ignore short-term gains in exchange for long-term payout. On the other hand, small values for $\gamma$ cause the agent to disregard the value of future states, focusing instead on immediate short-term gains.
 \subsubsection{Q-learning}
-Instead of assigning a value to every state $V(s)$, the agent can assign a value to every state-action pair $Q(s,a)$. Each of these is called a Q-value.
-
-Using Q-values instead of value iteration makes some of the math and implementation much easier. This is especially true in stochastic environments.
+Instead of assigning a value to every state $V(s)$, the agent can assign a value to every state-action pair $Q(s,a)$. Each of these is called a Q-value. In Q-learning, the agent uses Q-values to learn its environment instead of state-based values. Using Q-values instead of value iteration makes some of the math and implementation much easier. This is especially true in stochastic environments.
 
 Stochastic environments have multiple possible resulting states for a single state-action pair. For example, if a robot attempts to open a door there might be a 40\% chance that the robot fails to open the door, a 40\% chance that the door opens successfully, and a 20\% chance that the robot falls over and hurts itself. If the agent was using a value function $V(s)$ it would have to take all three of those resulting end states, their rewards, and the chance of them occurring into account when trying to determine how valuable the current state is. What's worse, that was only one action that could be taken from the current state!
 
@@ -216,7 +214,6 @@ Where $Q(s,a)$ is the Q-value of the best action in the current state $s$ and $Q
 
 \subsection{Intrinsic reward systems}
 Although the above explanation of reinforcement learning works in many cases, it struggles to solve problems where environmental rewards are infrequent or spread sparsely throughout the environment. \cite{DBLP:journals/corr/abs-1908-06976}
-
 One simple example of this is the case of a robot stuck in a maze. Since the robot only gets rewarded when it successfully exits the maze, the robot has no feedback until it succeeds for the first time. For any maze of significantly large size, it is practically impossible for the robot to randomly stumble upon the correct solution. As such, a robot depending on external (environmental) reward to learn is not sufficient to solve this problem.
 
 Intrinsic rewards are one method to allow agents to learn without the presence of environmental rewards. By letting the agent reward itself when it learns about the environment, the agent can learn to maximize its exploration of its environment. Once the agent has explored their environment sufficiently, they can switch to a different algorithm to take advantage of their knowledge. \cite{Rein:VIME}
@@ -226,9 +223,7 @@ One simplistic intrinsic reward system is to reward the agent whenever it finds 
 \section{Noisy TV Problem}
 The Noisy TV Problem is a particularly difficult scenario when using intrinsic reward systems in reinforcement learning. \cite{DBLP:journals/corr/abs-2008-04388} The problem is as follows: What if within the environment there was a TV with a remote. Whenever the agent was in front of the TV it could press the remote to switch the TV to a random channel.
 
-Many intrinsic reward systems fall prey to this scenario. For example, the intrinsic reward system above that rewards finding new states would consider the TV to be extremely valuable since all it takes is a single action to find a new state! This is significantly better than exploring around over multiple time-steps to find new areas not seen before. What makes this problem particularly difficult is that the agent cannot tell the difference between moving from state to state around the problem space and pressing the button to flip the channel. Both of these things are taking an action based on a given state.
-
-Other intrinsic reward systems such as count-based methods, probabilistic methods, and even memory methods also fall prey to this problem.  \cite{DBLP:journals/corr/abs-1908-06976}
+Many intrinsic reward systems fall prey to this scenario. For example, the intrinsic reward system above that rewards finding new states would consider the TV to be extremely valuable since all it takes is a single action to find a new state! This is significantly better than exploring around over multiple time-steps to find new areas not seen before. What makes this problem particularly difficult is that the agent cannot tell the difference between moving from state to state around the problem space and pressing the button to flip the channel. Both of these things are taking an action based on a given state. Other intrinsic reward systems such as count-based methods, probabilistic methods, and even memory methods also fall prey to this problem.  \cite{DBLP:journals/corr/abs-1908-06976}
 
 \section{Predicted Information Gain (PIG)}
 PIG is an algorithm that uses information theory to maximize exploration of the environment. \cite{10.3389/fncir.2013.00037} PIG functions by predicting how much information about the environment the agent will learn for each action it could take, then taking the action with the most information gain. This means that PIG focuses on creating the best model of the world it can, rather than maximizing the reward obtained from the environment.
@@ -248,7 +243,7 @@ PIG calculates the amount of information that would be gained when taking a spec
 
 Where $s^{*}$ is a valid resulting state due to taking action $a$ in state $s$ and $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is the updated model of $\hat{\Theta}_{as\cdot}$ if a transition from $s$ to $s^{*}$ was observed.
 
-Intuitively, $D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot})$ is a measure of how different our new model would be compared to our current model if we successfully transitioned from $s$ to $s^{*}$.
+Intuitively, $D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot})$ is a measure of how different our new model would be compared to our current model if we successfully transitioned from $s$ to $s^{*}$. The PIG algorithm takes this measure for every state $s^{*}$ it could end up in, then averages them to find out how valuable that action is in total. Pig then uses those values to pick the action $a$ that would teach it the most about its environment.
 
 Since the above equation is fully dependent on our internal model rather than the true model of the environment, it is updated whenever new data is learned and can be applied even when the agent is unaware of the true nature of the environment (As is the case in most real-world problems). In fact, the above equation can even be applied when the agent has no understanding of the problem space whatsoever but merely has a method of observing and interacting with its environment.
 
@@ -257,24 +252,15 @@ The PIG algorithm still falls prey to the Noisy TV problem. When in the Noisy TV
 
 The largest cause of this problem is that there is no confirmation that information has actually been learned. The PIG algorithm predicts future information gain based on it’s current data, but it never confirms that its prediction was correct.
 
-As such, I suggest changing the PIG algorithm to make it more robust to the Noisy TV problem. After each time-step, the new algorithm will re-calculate the Predicted Information Gain with the updated models from including the previous step. It will then compare the prediction from before with the new prediction. If information was actually learned the new prediction will be lower then the previous prediction as the total amount of information left to be learned has decreased. This decrease in unlearned information will then be normalized and used as an intrinsic reward.
-
-When this new method, Temporal Predicted Information Gain (TPIG), encounters the Noisy TV problem it will quickly realize that although the TV looks like it will provide a large amount of information, it actually provides very little that is useful.
+As such, I suggest changing the PIG algorithm to make it more robust to the Noisy TV problem. After each time-step, the new algorithm will re-calculate the Predicted Information Gain with the updated models from including the previous step. It will then compare the prediction from before with the new prediction. If information was actually learned the new prediction will be lower then the previous prediction as the total amount of information left to be learned has decreased. This decrease in unlearned information will then be normalized and used as an intrinsic reward. When this new method, Temporal Predicted Information Gain (TPIG), encounters the Noisy TV problem it will quickly realize that although the TV looks like it will provide a large amount of information, it actually provides very little that is useful.
 
 \section{Methods}
 %Include methods for testing to determine Thesis statement validity.
 To determine the validity of the TPIG method, a grid-world simulation (described below) will be created. The original PIG algorithm, the TPIG algorithm, and a random action baseline will be tested on the simulation and their results compared. $\epsilon$-greedy versions of the PIG and TPIG algorithms will also be tested.
 
 \subsection{Metrics}
-The metrics for comparison will be the learning rate (How fast the algorithms approach an optimal solution), the distraction rate (How many times the agent views the Noisy TV), and the internal model accuracy (The KL-divergence between the true model and the agent's model after a given amount of time).
+The metrics for comparison will be the learning rate (How fast the algorithms approach an optimal solution), the distraction rate (How many times the agent views the Noisy TV), and the internal model accuracy (The KL-divergence between the true model and the agent's model after a given amount of time). These measurements will be taken every time-step and recorded. Their results will then be graphed and compared to each other.
 
-%All three agents will start in the same state. All stochastic transitions will use the same randomly generated probability for all three agents. This allows for a more accurate comparison as each algorithm would have the exact same outcome if they chose the same actions.
-
-
-%The internal model accuracy is the missing Information equation.
-%The learning rate is the time until the model can choose the optimal path to get to a given location.
-%The distraction rate is given over all episodes. (Use same time scale as internal model accuracy uses)
-%Stop training when internal model is perfectly accurate? (Not possible due to rounding errors)
 \begin{figure}
 	\begin{center}
 	\includegraphics[scale=0.75]{"images/4-TV.pdf"}
@@ -300,13 +286,11 @@ The simulations are a grid world. Agents can move in any of the four cardinal di
 \subsection{Diagrams}
 Three simulations were used to test the agent and its policies. These simulations are shown in \figurename~\ref{Fig:Sim}. The first of these is a 4x4 and has multiple Noisy-TV's. The second is a 5x5 with a single Noisy-TV. The final simulation is a 6x6 without any Noisy-TV's. The no-TV simulation serves as a control for how policies act without any distractions.
 \subsection{Implementation}
-The simulation program is capable of reading in a simulation from a special ".sim" file. The user can then forcefully change the agent's location or use the built in "takeAction" function to move the agent according to the transition rules.
+The simulation program is capable of reading in a simulation from a special ".sim" file. The user can then forcefully change the agent's location or use the built in "takeAction" function to move the agent according to the transition rules. The user can also print out simulations to a PDF file for easy viewing.
 
 The transition rules are defined inside the simulation class. By default, there is a 90\% chance of taking the desired action and a 10\% chance of staying in the same state instead. Moving into a wall has a 100\% chance of leaving the agent in the same state. Moving into a Noisy-TV is the same as moving into a wall, but the noise variable in the state is incremented, simulating how the Noisy-TV looks different every time the remote is used to flip the channel.
 
-Due to the complications of data storage, the current simulation stores all transitions as a two-dimensional vector that is indexed by a state-action pair. (s,a) pair. This means that noise is not taken into account in the starting state when indexing observed state transitions.
-
-This issue is not significant since the only states with noise are the Noisy-TV states and all state comparisons using the Noisy-TV states are done using functions that take the noise into account.
+Due to the complications of data storage, the current simulation stores all transitions as a two-dimensional vector that is indexed by a state-action pair. (s,a) pair. This means that noise is not taken into account in the starting state when indexing observed state transitions. This issue is not significant since the only states with noise are the Noisy-TV states and all state comparisons using the Noisy-TV states are done using functions that take the noise into account.
 
 A more technically accurate representation would have each Noisy-TV state transition be stored relative to the noise of the state that the agent moved from. Essentially having each state transition with a noisy state be stored in its own portion of the (s,a) indexed array. However, since the noise has no effect on the actual transitions of the simulation, storing it in this way is impractical and incredibly confusing.
 
@@ -315,23 +299,16 @@ Policies define how the agent selects an action to take based on its internal mo
 \subsection{Implementation}
 Every policy has functions to select actions and update their internal model. The policy selects an action $a$ based on its current state $s$. This action $a$ is then passed to the simulation which returns the new state $s'$ that the agent transitions to. This set of $(s,a,s')$ defines a unique state transition.
 
-The policy can use a state transition to update its internal model. When it does so, it adds the state transition to its list of observed transitions.
+The policy can use a state transition to update its internal model. When it does so, it adds the state transition to its list of observed transitions. All policies (even those that don't use their internal model for decisions) are capable of updating their internal model.
 \subsection{Random Walk}
-The Random Walk algorithm always chooses a random action. Each action has an equal probability (25\%) of being chosen.
+The Random Walk algorithm always chooses a random action. Each action has an equal probability (25\%) of being chosen. The Random Walk algorithm observes state transitions and updates its internal model as normal, but never uses those observations to affect its decision process. In this paper, the Random Walk algorithm is used as a baseline for algorithm comparisons.
 
-The Random Walk algorithm observes state transitions and updates its internal model as normal, but never uses those observations to affect its decision process.
-
-In this paper, the Random Walk algorithm is used as a baseline for algorithm comparisons.
 \subsection{Predicted Information Gain (PIG)}
-The PIG algorithm calculates the predicted information gain of every action it could take based on its model, then selects the action with the largest potential gain.
-
-It does this by using the Kullback-Leibler divergence to estimate how much information remains to be gathered from each $(s,a)$ pair. 
+The PIG algorithm calculates the predicted information gain of every action it could take based on its model, then selects the action with the largest potential gain. It does this by using the Kullback-Leibler divergence to estimate how much information remains to be gathered from each $(s,a)$ pair. The action from the $(s,a)$ pair with the highest value is then chosen.
 
 The Kullback-Leibler divergence is defined as follows:
 \[D_{KL} (\Theta_{sa\cdot} || \hat{\Theta}_{sa\cdot}) := \sum_{s' = 1}^{ N} \Theta_{sas'} \log_{2}(\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}})   \]
-Where $\Theta_{sa\cdot}$ is the true transition probabilities when starting in state $s$ and taking action $a$, $\hat{\Theta}_{sa\cdot})$ is the agent's estimated transition probabilities when starting in state $s$ and taking action $a$  based on the transitions they have observed and stored.
-
-Similarly, $\Theta_{sas'}$ is the true transition probability of a transition from state $s$ to state $s'$ when taking action $a$ and $\hat{\Theta_{sas'}}$ is the agent's estimated transition probability from state $s$ to state $s'$ when taking action $a$ based on the transitions they have observed and stored.
+Where $\Theta_{sa\cdot}$ is the true transition probabilities when starting in state $s$ and taking action $a$, $\hat{\Theta}_{sa\cdot})$ is the agent's estimated transition probabilities when starting in state $s$ and taking action $a$  based on the transitions they have observed and stored. Similarly, $\Theta_{sas'}$ is the true transition probability of a transition from state $s$ to state $s'$ when taking action $a$ and $\hat{\Theta_{sas'}}$ is the agent's estimated transition probability from state $s$ to state $s'$ when taking action $a$ based on the transitions they have observed and stored.
 
 The Kullback-Leibler divergence is often used in information theory to estimate the information difference from one model to another. In the PIG algorithm, the Kullback-Leibler divergence is used to estimate the potential information that could be gained from taking a specific action.
 This is done through the following equation:
@@ -339,7 +316,7 @@ This is done through the following equation:
 
 Where $s^{*}$ is a potential future state that could be transitioned to and $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is the observed transition probabilities from state $s$ when taking action $a$ after a transition $(s,a,s^{*})$ has been observed and used to update the internal transition probabilities in the model.
 
-In an ideal scenario, the true transition probabilities $\Theta_{as\cdot}$ would be used instead of $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ for this calculation. However, since the agent does not have access to the true transition probabilities $\Theta_{as\cdot}$, $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is used as an estimate to allow the agent to learn.
+In an ideal scenario, the true transition probabilities $\Theta_{as\cdot}$ would be used instead of $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ for this calculation. However, since the agent does not have access to the true transition probabilities $\Theta_{as\cdot}$, $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is used as an estimate to allow the agent to learn. There is no oracle in this study, however if an oracle did exist, the true transition probabilities could be used instead to potentially great effect.
 
 Conceptually, the agent's estimate $\hat{\Theta}$ will approach the true distribution $\Theta$ as the agent gathers more data. As the gathered data approaches infinity, the agent's estimate $\hat{\Theta}$ will approach the true distribution $\Theta$. In mathematical terms:
 
@@ -347,75 +324,40 @@ Conceptually, the agent's estimate $\hat{\Theta}$ will approach the true distrib
 
 This can be clearly seen, as $\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}}$ approaches 1 as more data is gathered and the $\lim_{x \rightarrow 1} \log_{2}(x)$ is 0.
 
-The Kullback-Leibler divergence and (consequently) PIG algorithm do have some inherent limitations that needed to be handled in physical implementation.
-\begin{itemize}
-	\item Unobserved transitions in $\Theta$
-	\item Predicted Transitions in PIG always match known state transitions.
-\end{itemize}
+The Kullback-Leibler divergence and (consequently) PIG algorithm do have some inherent limitations that needed to be handled in physical implementation. In the following sections, these limitations and my methods of resolving them are discussed in depth.
+
+The method above is not the only implementation of the PIG algorithm. There are advanced versions of PIG that predict the information gain for multiple time steps in the future. However, these methods are outside the scope of this paper. Future work could be done on testing these methods to determine their effectiveness.
 
 \subsubsection{Unobserved Transitions}
-Due to the nature of the Kullback-Leibler divergence, every state that exists in $\Theta$ but not in $\hat{\Theta}$ will produce a result of $\infty$, as the $\lim_{x \rightarrow 0} \frac{\Theta}{x} = \infty$. This means that the Kullback-Leibler divergence is only valid if $\Theta$ and $\hat{\Theta}$ are one-to-one over their probability distributions.
+Due to the nature of the Kullback-Leibler divergence, every state that exists in $\Theta$ but not in $\hat{\Theta}$ will produce a result of $\infty$, as the $\lim_{x \rightarrow 0} \frac{\Theta}{x} = \infty$. This means that the Kullback-Leibler divergence is only valid if $\Theta$ and $\hat{\Theta}$ are one-to-one over their probability distributions. Thankfully, this is not an issue when running the PIG algorithm in practice. Since $\hat{\Theta}_{sas^{*}}$ is 0 when $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is transitioning to a new (undiscovered) state $s^{*}$, we can shortcut past the actual calculation whenever  $\hat{\Theta}_{as\cdot}$ and their predicted counterpart $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ are different sizes (when $s^{*}$ has not been found yet), returning a 0 instead.
 
-Thankfully, this is not an issue when running the PIG algorithm in practice. Since $\hat{\Theta}_{sas^{*}}$ is 0 when $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is transitioning to a new (undiscovered) state $s^{*}$, we can shortcut past the actual calculation whenever  $\hat{\Theta}_{as\cdot}$ and their predicted counterpart $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ are different sizes, returning a 0 instead.
-
-This method also applies when the algorithm is just beginning and $\hat{\Theta}_{as\cdot}$ is empty.
-
-This does become an issue when gathering the data for algorithm comparisons, but the specifics of that will be discussed in the results section.
+This method also applies when the algorithm is just beginning and $\hat{\Theta}_{as\cdot}$ is empty. In this early case, any action is optimal. When gather data for the algorithm comparisons, $\Theta$ and $\hat{\Theta}$ are not the same size and this problem does become an issue. The specifics of how this is resolved will be discussed in the results section.
 
 \subsubsection{PIG Closed Minded Models}
-The Kullback-Leibler divergence returns 0 when the probabilities of its two inputs are the same. However, this provides a problem when the PIG algorithm is learning.
+The Kullback-Leibler divergence returns 0 when the probabilities of its two inputs are the same. However, this provides a problem when the PIG algorithm is learning. Specifically, this prevents the PIG algorithm from exploring new states.
 
 When the PIG algorithm observes a transition for the first time, it stores the probability of that transition $(s,a,s')$ occurring as 100\%. This is regardless of what the true transition probability is. When PIG has explored for a while and comes back to that state $s$, it will predict that the transition $(s,a,s')$ is still 100\% when it takes action $a$ regardless of what the true probability actually is. Since the predicted probability and the measured probability of $(s,a,s')$ are both the same (100\%) the Kullback-Leibler divergence will return 0 and PIG will consider the related action $a$ as being less valuable than other actions.
 
-This makes the PIG algorithm focus on areas it has already explored and found variance in, to the detriment of exploring anywhere it has only touched once.
+This makes the PIG algorithm focus on areas it has already explored and found variance in, to the detriment of exploring anywhere it has only touched once. To fix this issue, the PIG algorithm in my implementation initializes the total number of observed transitions to 1 instead of 0. In other words, the number of total transitions the agent has observed is one less than the number of transitions they \b{think} they have observed.
 
-To fix this issue, the PIG algorithm in my implementation initializes the total number of observed transitions to 1 instead of 0. In other words, the number of total transitions the agent has observed is one less than the number of transitions they \b{think} they have observed.
+Intuitively, I have tricked the PIG algorithm into thinking it has observed a transition that does not exist. As such, the PIG algorithm will always think that there is more to learn about every state-action pair $(s,a)$ it has ever encountered. As a result, the probabilities of the two inputs of the Kullback-Leibler divergence function will never be the same, and the PIG algorithm will never stop exploring. Although this method does modify the original PIG algorithm, the PIG algorithm will still converge to a Kullback-Leibler divergence of 0. As such, I feel this change is justified.
 
-Intuitively, I have tricked the PIG algorithm into thinking it has observed a transition that does not exist. As such, the PIG algorithm will always think that there is more to learn about every state-action pair $(s,a)$ it has ever encountered.
-
-As a result, the probabilities of the two inputs of the Kullback-Leibler divergence function will never be the same, and the PIG algorithm will never stop exploring.
-
-Although this method does modify the original PIG algorithm, the PIG algorithm will still converge to a Kullback-Leibler divergence of 0. As such, I feel this change is justified.
-
-\subsubsection{Other PIG Comments} 
-Due to the nature of the Kullback-Leibler divergence, this means that the PIG model is drawn to new state transitions whenever possible, as there is more information to be gained there.
-
-As PIG continues to explore, it will focus on areas that it has a poor model for and avoid areas where its model doesn't change.
-
-There are advanced versions of PIG that predict the information gain for multiple time steps in the future, but the version implemented here only predicts a single time step in the future. 
 \subsection{Erratic Predicted Information Gain (EPIG)}
-The EPIG algorithm is exactly the same as the PIG algorithm, except that it follows an $\epsilon$-greedy model.
-
-This means that whenever EPIG selects an action, it has an $\epsilon$\% chance to select a different action instead.
-
-A table of epsilon values is shown below.
-
-Since EPIG occasionally takes a different action than the ``optimal'' one, it is capable of escaping from infinite loops such as the Noisy-TV.
+The EPIG algorithm is exactly the same as the PIG algorithm, except that it follows an $\epsilon$-greedy model. This means that whenever EPIG selects an action, it has an $\epsilon$\% chance to select a different action instead. Since EPIG occasionally takes a different action than the ``optimal'' one, it is capable of escaping from infinite loops such as the Noisy-TV. Except for the graphs specifically testing $\epsilon$, in this implementation, $\epsilon$ is set to 10\%.
 
 \subsection{Temporal Predicted Information Gain (TPIG)}
-The TPIG algorithm uses the Kullback-Leibler Divergence to calculate how much information is in a given $(s,a)$ pair. After observing a state transition $(s,a,s')$ it calculates the amount of information there is remaining to be learned both before and after the transition is used to update its internal model.
-
-TPIG then takes the difference between the two calculations. This difference is used as a reward to determine future actions.
-
-The reward function is as follows:
+The TPIG algorithm uses the Kullback-Leibler Divergence to calculate how much information is in a given $(s,a)$ pair. After observing a state transition $(s,a,s')$ it calculates the amount of information there is remaining to be learned both before and after the transition is used to update its internal model. TPIG then takes the difference between the two calculations. This difference is used as a reward to determine future actions. The reward function is as follows:
 \begin{equation}
 	Reward(s,a,s') := D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t-1} || \hat{\Theta}_{as\cdot}^{t-1}) - D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t} || \hat{\Theta}_{as\cdot}^{t})
 \label{eq:TPIGReward}
 \end{equation}
-
 Where $\hat{\Theta}_{as\cdot}^{t-1}$ is the transition probabilities given before the state transition has been updated and $\hat{\Theta}_{a,s \rightarrow s'}^{t-1}$ is the predicted transition probabilities if the $(s,a,s')$ transition was observed.
 
-After the $(s,a,s')$ transition has been used to update the model, $\hat{\Theta}_{as\cdot}^{t}$ is the new transition probabilities after the update. $\hat{\Theta}_{a,s \rightarrow s'}^{t}$ is the predicted transition probabilities if a second transition $(s,a,s')$ was observed.
-
-The reward is then used to update the internal values of the $(s,a)$ pairs. These internal values known as Q-values are used to determine the optimal action to take.
+After the $(s,a,s')$ transition has been used to update the model, $\hat{\Theta}_{as\cdot}^{t}$ is the new transition probabilities after the update. $\hat{\Theta}_{a,s \rightarrow s'}^{t}$ is the predicted transition probabilities if a second transition $(s,a,s')$ was observed. The reward is then used to update the internal values of the $(s,a)$ pairs. These internal values known as Q-values are used to determine the optimal action to take.
 
 The formula for updating the Q-values is a standard temporal difference equation as shown below:
-
 \[Q_{new} = Q_{old} + \alpha(Reward + \gamma Q_{new} - Q_{old})\]
-
-Where $Q_{old}$ is the Q-value of the best action in the current state $s$ and $Q_{new}$ is the Q-value of the best action to be taken from the new state $s'$. The learning rate $\alpha$ and discount factor $\gamma$ are both set to $0.9$.
-
-Q-values are initialized to 1.
+Where $Q_{old}$ is the Q-value of the best action in the current state $s$ and $Q_{new}$ is the Q-value of the best action to be taken from the new state $s'$. The learning rate $\alpha$ and discount factor $\gamma$ are both set to $0.9$. Q-values were initialized to 1.
 
 To determine which action to take, TPIG checks its internal model of Q-values. The action $a$ that has the highest Q-values for its current state $s$ is chosen. This is formalized in the following equation:
 
@@ -424,9 +366,7 @@ To determine which action to take, TPIG checks its internal model of Q-values. T
 \subsubsection{TPIG and Infinity}
 In the initial exploration for TPIG, the Kullback-Leibler divergence will return $\infty$. This is because there are no known transitions in $\hat{\Theta}_{sa\cdot}$. To prevent these results from breaking the algorithm, any infinities returned by the Kullback-Leibler divergence is replaced with a 0 when the Reward is calculated.
 
-To avoid punishing the model when discovering new states, the reward is set to 0 if it is a negative number.
-
-Similarly, any Q-values that are infinity are normalized to 0 before the function to update the Q-values is called.
+To avoid punishing the model when discovering new states, the reward is set to 0 if it is a negative number. Similarly, any Q-values that are infinity are normalized to 0 before the function to update the Q-values is called.
 
 \subsubsection{Conceptual Explanation}
 Whenever TPIG observes a state transition $(s,a,s')$, it uses the Kullback-Leibler divergence to calculate how much information there is left to be gained. It does this calculation both before and after it updates its internal model with the observed transition.
@@ -436,29 +376,35 @@ TPIG then compares the amount of information there was before and after its upda
 Simply, TPIG takes the action that it has experienced will make it take the most information from its environment. This is in contrast to PIG which takes the action that it predicts will teach it the most.
 
 \subsection{Erratic Temporal Predicted Information Gain (ETPIG)}
-The ETPIG algorithm is exactly the same as the TPIG algorithm, except that it follows an $\epsilon$-greedy model.
-
-This means that whenever EPIG selects an action, it has an $\epsilon$\% chance to select a different action instead.
-
-A table of epsilon values is shown below.
+The ETPIG algorithm is exactly the same as the PIG algorithm, except that it follows an $\epsilon$-greedy model. This means that whenever ETPIG selects an action, it has an $\epsilon$\% chance to select a different action instead. Except for the graphs specifically testing $\epsilon$, in this implementation, $\epsilon$ is set to 10\%.
 \subsection{Notes}
-I initialized the starting states for PIG and EPIG to 1 instead of 0. This is because the Kullback-Leibler Divergence does not work well when initialized to 0. By making the policy start with an inflated transition counter, the policy never predicts a starting transition probability of 1. This encourages the algorithm to explore by tricking it into thinking it has never fully explored a given state.
+I initialized the starting states for PIG and EPIG to 1 instead of 0. This is because the Kullback-Leibler Divergence does not work well when initialized to 0. By making the policy start with an inflated transition counter, the policy never predicts a starting transition probability of 1. This encourages the algorithm to explore by tricking it into thinking it has never fully explored a given state. As the agent learns, its predicted probabilities for the state transitions will approach the true probabilities due to the law of large numbers.
 
-As the agent learns, its predicted probabilities for the state transitions will approach the true probabilities due to the law of large numbers.
-
-Due to space restrictions, I stored transitions in a two-dimensional array accessed by their state id and action. This causes all policies to consider noisy-TV states as being adjacent to the "base state" of the noisy-TV room.
+Due to space restrictions, I stored transitions in a two-dimensional array accessed by their state id and action. This causes all policies to consider noisy-TV states as being adjacent to the ``base state" of the noisy-TV room. In this case, this is an accurate representation, as all Noisy-TV states are technically ``In the same room". Future work could detach these states, potentially making this problem harder.
 
 \chapter{Results}
-Each of the above policies were tested on three criteria.
-\begin{sidewaysfigure}
+Each of the above policies were tested on three criteria. Their results were then compared to each other to determine the effectiveness of each policy. The metrics used for this comparison are as follows:
+\begin{figure}
 	\begin{center}
-		\includegraphics[scale=0.7]{"images/Distraction_Rate_4-TV.pdf"}
-		\includegraphics[scale=0.7]{"images/Distraction_Rate_1-TV.pdf"}
-		\includegraphics[scale=0.7]{"images/Distraction_Rate_No-TV.pdf"}
+		\includegraphics[scale=0.8]{"images/Distraction_Rate_4-TV.pdf"}
 	\end{center}
-	\caption{Distraction Rate of all Five Policies for simulations with Four TV's (Left), No TV (Middle) and One TV(Right)}
-	\label{Fig:DRFP}
-\end{sidewaysfigure}
+	\caption{Distraction Rate of all Five Policies for 4-TV simulation}
+	\label{Fig:DRFP4TV}
+\end{figure}
+\begin{figure}
+	\begin{center}
+		\includegraphics[scale=0.8]{"images/Distraction_Rate_1-TV.pdf"}
+	\end{center}
+	\caption{Distraction Rate of all Five Policies for 1-TV simulation}
+	\label{Fig:DRFP1TV}
+\end{figure}
+\begin{figure}
+	\begin{center}
+		\includegraphics[scale=0.8]{"images/Distraction_Rate_No-TV.pdf"}
+	\end{center}
+	\caption{Distraction Rate of all Five Policies for No-TV simulation}
+	\label{Fig:DRFP0TV}
+\end{figure}
 
 \begin{itemize}[]
 	\item Distraction Rate: Total number of times algorithm used the Noisy-TV
@@ -467,7 +413,7 @@ Each of the above policies were tested on three criteria.
 \end{itemize}
 
 \section{Distraction Rate}
-\figurename~\ref{Fig:DRFP} is a comparison of the distraction rate of all five policies. The fewer times a given algorithm is distracted by the Noisy-TV the better.
+\figurename~\ref{Fig:DRFP4TV}, \ref{Fig:DRFP1TV}, and \ref{Fig:DRFP0TV} are comparisons of the distraction rate of all five policies. Every time the agent activated the Noisy-TV, the distraction rate counter was increased by 1. As such, the fewer times a given algorithm is distracted by the Noisy-TV the better.
 
 In all three simulations, the baseline Random Walk algorithm was distracted the least. In the simulations with Noisy-TV's, the PIG algorithm was distracted heavily by the Noisy-TV. The TPIG algorithm, in comparison, was initially distracted but quickly learned to ignore or avoid the distraction. In the 1-TV simulation, the TPIG algorithm approached Random Walk in how effectively it ignored the Noisy-TV. In the 4-TV simulation, however, TPIG does not approach Random Walk's effectiveness, but does perform much better than PIG does. In the simulation without any Noisy-TV's, all algorithms performed equally well on this metric, since there were no distractions.
 
@@ -475,44 +421,75 @@ In all three simulations, the baseline Random Walk algorithm was distracted the 
 Both PIG and TPIG were improved with the adding of an $\epsilon$-greedy component. This is expected, as adding an $\epsilon$ chance to randomly move allows the algorithm to "Free" itself from distracting loops.
 
 
-\begin{sidewaysfigure}
-	\begin{center}
-		\includegraphics[scale=0.7]{"images/Missed_States_4-TV.pdf"}
-		\includegraphics[scale=0.7]{"images/Missed_States_1-TV.pdf"}
-		\includegraphics[scale=0.7]{"images/Missed_States_No-TV.pdf"}
-	\end{center}
-	\caption{Missed States of all Five Policies for simulations with Four TV's (Left), No TV (Middle) and One TV(Right)}
-	\label{Fig:MSFP}
-\end{sidewaysfigure}
+%\begin{sidewaysfigure}
+%	\begin{center}
+%		\includegraphics[scale=0.7]{"images/Missed_States_4-TV.pdf"}
+%		\includegraphics[scale=0.7]{"images/Missed_States_1-TV.pdf"}
+%		\includegraphics[scale=0.7]{"images/Missed_States_No-TV.pdf"}
+%	\end{center}
+%	\caption{Missed States of all Five Policies for simulations with Four TV's (Left), No TV (Middle) and One TV(Right)}
+%	\label{Fig:MSFP}
+%\end{sidewaysfigure}
 
 \section{Learning Rate}
-\figurename~\ref{Fig:MSFP} is a comparison of the learning rate of all five policies. The faster the algorithm decreases, the faster it is learning about its environment.
+\figurename~\ref{Fig:MSFP4TV}, \ref{Fig:MSFP1TV}, and \ref{Fig:MSFP0TV} are comparisons of the learning rate of all five policies. The faster the algorithm decreases, the faster it is learning about its environment.
 
 Compared to the Random Walk baseline, the PIG algorithm performed better in the simulations with 1-TV or No-TV. In the 4-TV simulation, PIG performed better initially, but worse in the end. The TPIG algorithm, in comparison, initially performed worse than both PIG and the Random Walk for all three simulations. For large time-steps, however, the TPIG algorithm performs better than both Random Walk and PIG in all three simulations.
 
 The $\epsilon$-greedy implementations had no significant impact on the base algorithms. This is interesting behavior, as it demonstrates that the exploration of new transitions was minimally effected by small values of $\epsilon$ (10\%).
 
-\begin{sidewaysfigure}
+\begin{figure}
 	\begin{center}
-		\includegraphics[scale=0.46]{"images/Missed_States_4-TV.pdf"}
-		\includegraphics[scale=0.46]{"images/Missed_States_1-TV.pdf"}
-		\includegraphics[scale=0.46]{"images/Missed_States_No-TV.pdf"}
+		\includegraphics[scale=0.8]{"images/Missed_States_4-TV.pdf"}
 	\end{center}
-	\caption{Missed States of all Five Policies for simulations with Four TV's (Left), One TV (Middle) and No TV(Right)}
-	\label{Fig:MSFP}
+	\caption{Missed States of all Five Policies for 4-TV Simulation}
+	\label{Fig:MSFP4TV}
+\end{figure}
+\begin{figure}
 	\begin{center}
-		\includegraphics[scale=0.46]{"images/Model_Accuracy_4-TV.pdf"}
-		\includegraphics[scale=0.46]{"images/Model_Accuracy_1-TV.pdf"}
-		\includegraphics[scale=0.46]{"images/Model_Accuracy_No-TV.pdf"}
+		\includegraphics[scale=0.8]{"images/Model_Accuracy_4-TV.pdf"}
 	\end{center}
-	\caption{Model Accuracy of all Five Policies for simulations with Four TV's (Left), One TV (Middle) and No TV(Right)}
-	\label{Fig:MAFP}
-\end{sidewaysfigure}
+	\caption{Model Accuracy of all Five Policies for 4-TV simulation.}
+	\label{Fig:MAFP4TV}
+\end{figure}
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[scale=0.8]{"images/Missed_States_1-TV.pdf"}
+	\end{center}
+	\caption{Missed States of all Five Policies for 1-TV Simulation}
+	\label{Fig:MSFP1TV}
+\end{figure}
+\begin{figure}
+\begin{center}
+	\includegraphics[scale=0.8]{"images/Model_Accuracy_1-TV.pdf"}
+\end{center}
+\caption{Model Accuracy of all Five Policies for 1-TV simulation.}
+\label{Fig:MAFP1TV}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+	\includegraphics[scale=0.8]{"images/Model_Accuracy_No-TV.pdf"}
+\end{center}
+\caption{Model Accuracy of all Five Policies for No-TV simulation.}
+\label{Fig:MAFP0TV}
+\end{figure}
+\begin{figure}
+	\begin{center}
+		\includegraphics[scale=0.8]{"images/Missed_States_No-TV.pdf"}
+	\end{center}
+	\caption{Missed States of all Five Policies for No-TV Simulation}
+	\label{Fig:MSFP0TV}
+\end{figure}
+
+
+
 
 \section{Model Accuracy}
-\figurename~\ref{Fig:MAFP} is a comparison of the model accuracy of all five policies. This was done through taking the Kullback-Leibler divergence between the policy's model and the true model. Since the Kullback-Leibler divergence returns infinity in the case where a state is in the true model but not the policy's model, these values were ignored and replaced with 0's in the calculations. Lower values are better, but every missing state would add to the KL-divergence if it was found.
+\figurename~\ref{Fig:MAFP4TV}, \ref{Fig:MAFP1TV}, and \ref{Fig:MAFP0TV} are comparisons of the model accuracy of all five policies. This was done through taking the Kullback-Leibler divergence between the policy's model and the true model. Since the Kullback-Leibler divergence returns infinity in the case where a state is in the true model but not the policy's model, these values were ignored and replaced with 0's in the calculations. Lower values are better, but every missing state would add to the KL-divergence if it was found.
 
-Compared to the Random Walk baseline, the PIG algorithm performed worse initially in all three simulations. However, since the PIG algorithm had more states known at each of these time-steps as shown in \figurename~\ref{Fig:MSFP} the two results are more comparable. An exact comparison is difficult due to this for the 4-TV and 1-TV simulation. In the No-TV simulation, however, PIG performed better than the Random Walk baseline in both learning rate and model accuracy for large time-steps.
+Compared to the Random Walk baseline, the PIG algorithm performed worse initially in all three simulations. However, since the PIG algorithm had more states known at each of these time-steps as shown in \figurename~\ref{Fig:MSFP4TV}, \ref{Fig:MSFP1TV}, and \ref{Fig:MSFP0TV} the two results are more comparable. An exact comparison is difficult due to this for the 4-TV and 1-TV simulation. In the No-TV simulation, however, PIG performed better than the Random Walk baseline in both learning rate and model accuracy for large time-steps.
 
 In contrast, the TPIG algorithm performed better than both the PIG and Random Walk algorithms for all time-steps. This is particularly notable since the TPIG algorithm surpassed both the PIG and Random Walk algorithm in terms of states found. This means that TPIG had a better Model Accuracy than both PIG and Random Walk while also having explored faster.
 
@@ -522,119 +499,123 @@ The $\epsilon$-greedy implementations performed equally well to the base algorit
 
 \section{Epsilon Values}
 The effect of different values for epsilon is shown in the following set of graphs. \figurename~\ref{Fig:DREC}, \figurename~\ref{Fig:EMEC}, and \figurename~\ref{Fig:EAEC} show how $\epsilon$ values affect the EPIG and ETPIG algorithms. Epsilon values were tested in increments of 20\%.
-
-\subsection{Distraction Rate}
-In the 4-TV simulation, The distraction rate decreases as $\epsilon$ increases. This is true in both for EPIG and ETPIG. In EPIG, as $\epsilon$ increases towards 100\% not only does the rate of distraction decrease but the frequency of distraction decreases as well. This is expected behavior, as the more random the algorithm is, the less often it should tend towards its biases, in this case the Noisy-TV.
-
-In ETPIG, the initial rate of distraction is affected by the value of $\epsilon$, but the frequency of distraction is unaffected (Or affected much less). There are some weird artifacts in the case of $\epsilon = 0$, also known as the TPIG case. This suggests that adding some randomness to the TPIG algorithm smooths out some irregular behavior.
-
-In the 1-TV simulation, the distraction rate decreases as $\epsilon$ increases. This is true for both EPIG and ETPIG. The results for EPIG in the 1-TV simulation are very similar to the 4-TV simulation results. Both the distraction rate and frequency of distraction decrease as $\epsilon$ increases.
-
-In ETPIG, however, the results are slightly different for the 1-TV simulation compared to the 4-TV simulation. Unlike the 4-TV simulation, in the 1-TV simulation, the distraction rate and frequency for the ETPIG algorithm approach towards the Random Walk algorithm ($\epsilon = 100$). This is very interesting, as it suggests that the ETPIG algorithm has figured out the Noisy-TV's and is now avoiding them, performing better than the Random Walk baseline. Around time-step 100, there is a point when all the ETPIG policies pivot. This suggests that ETPIG may perform worse for smaller amounts of time when it has a low value of $\epsilon$. There are still weird artifacts in the case of $\epsilon = 0$, with TPIG performing much worse initially than its ETPIG counterpart. Similarly, TPIG does not appear to converge to the Random Walk algorithm, unlike its $\epsilon$-greedy counterpart ETPIG. Whether this is true for large time-steps or not cannot be determined without longer simulations. 
-
-In the No-TV simulation, there is no Noisy-TV to distract any of the algorithms. As such, all the algorithms perform equally well on this metric and are never distracted.
-
-\subsection{Learning Rate}
-In the 4-TV simulation, higher values of $\epsilon$ generally provided better results than lower values of $\epsilon$. In the case of EPIG, although higher values of $\epsilon$ performed worse initially, they performed better than low values of $\epsilon$ after around time step 350. On the contrary, lower values of $\epsilon$ fell off at around the same point, performing worse in the end.
-
-In ETPIG, however, high values of $\epsilon$ performed better throughout the entire simulation. Low values of $\epsilon$ performed worse initially, but approached and matched the performance of high $\epsilon$ values at around time step 250. From that time onward, all values of $\epsilon$ seem to perform roughly equally.
-
-In the 1-TV simulation, the results were significantly different from those of the 4-TV simulation. Low values of $\epsilon$ performed better for both EPIG and ETPIG in the 4-TV simulation than their high $\epsilon$ valued counterparts. In the case of EPIG, low values of $\epsilon$ performed better than high values of $\epsilon$ for the entire simulation. High values of $\epsilon$ do tend to approach lower values of $\epsilon$ as the simulation continues, but to determine whether they converge or not would require longer simulations.
-
-In ETPIG, however, low values of $\epsilon$ performed worse initially, but surpassed high values of $\epsilon$ around time step 300. Unlike in the 4-TV simulation, in the 1-TV simulation, ETPIG is clearly better with lower values of $\epsilon$ towards later time steps.
-
-In the No-TV simulation, the results were very similar to those of the 1-TV simulation. In the case of EPIG, although the scales are different (As expected of two simulations of different size), the relationships between the different values of $\epsilon$ and how their graphs behave were nearly identical.
-
-In ETPIG, a similar thing is true. The results for ETPIG in the 1-TV and No-TV simulations are extremely similar, with the main difference being the time step when the graph pivots and low values of $\epsilon$ becomes better than high values of $\epsilon$. This change is probably a result of the simulation size changing, as the crossover point shifts forward in time as the size of the simulation increases. In simulation 4-TV, this point is at time step 200, while it is at time step 300 in simulation 1-TV and time step 400 in simulation No-TV.
-
-\subsection{Model Accuracy}
-As a metric, the Kullback-Leibler divergence alone cannot provide an accurate measurement. This is because the Kullback-Leibler divergence returns an infinity whenever a state transition is in the true distribution, but not in the agent's model. To allow for any visible results on this metric, I have replaced all of these infinities with 0 when taking these measurements. To provide any meaningful analysis, the Kullback-Leibler divergence is used in conjunction with the learning rate discussed in the previous section. Every explored state adds a positive value to the KL-divergence total. As such, if two agents had the same Kullback-Leibler divergence with the true distribution $\Theta$ but agent 1 had discovered more states than agent 2, than agent 1 performed better than agent 2.
-
-In the 4-TV simulation, higher values of $\epsilon$ had a worse performance than lower values of $\epsilon$. In the case of EPIG, middle values of $\epsilon$ performed better than both high and low values of $\epsilon$. Although high values of $\epsilon$ performed better initially, they performed worse for larger values of time. In addition, since high values of $\epsilon$ performed worse than low values of $\epsilon$ for the related learning rate metric, high values of $epsilon$ performed worse than it appears, being comparable to the other values of $\epsilon$ in the beginning time steps. In later time steps, although high values of $\epsilon$ had a worse KL-divergence, they had discovered more states then the other values of $\epsilon$ making them comparable if not better. 
-
-Low values of $\epsilon$ had a worse KL-divergence initially, but rapidly converged to the other values of $\epsilon$ in the middle stages of time before falling off towards the end of the simulation. Since low values of $\epsilon$ performed well initially with respect to learning rate before falling off and performing the worst towards the end of the simulation, we can determine that low values of $\epsilon$ performed comparable to the other values of $\epsilon$ at the start of the simulation, but performed the worst of all the $epsilon$ values by the end.
-
-In short, for EPIG in the 4-TV simulation, high values of $\epsilon$ are comparable to middle values of $\epsilon$, while low values of $\epsilon$ performed badly.
-
-In ETPIG, however, low values of $\epsilon$ remained better than high values of $\epsilon$ for the entire simulation. At the beginning of the simulation, lower values of $\epsilon$ had a worse learning rate, making their KL-divergence performance comparable to the other $\epsilon$ values. However, the learning rate for all the $\epsilon$ values converge around time step 200. Since low values of $\epsilon$ still have the lowest KL-divergence of all the $\epsilon$'s after time step 200, in the 4-TV simulation lower values of $\epsilon$ have better performance than higher values of $\epsilon$ for the ETPIG algorithm.
-
-In the 1-TV simulation, $\epsilon$ had different effects on EPIG and ETPIG. In the case of EPIG, higher values of $\epsilon$ performed better and had lower KL-divergences than lower values of $\epsilon$. However, since the learning rate of performed inverse to this, (where high values of $\epsilon$ performed worse than low values of $\epsilon$), the KL-divergences among the different values of $\epsilon$ for EPIG are comparable to each other.
-
-In ETPIG, however, the lower values of $\epsilon$ performed better than the higher values of $\epsilon$ for the entire simulation. The learning rate of ETPIG in the 1-TV simulation performs better for high values of $\epsilon$ than low values of $\epsilon$ before time step 300. After that point, low values of $\epsilon$ perform better than high values of $\epsilon$. This means that the KL-divergences of ETPIG for simulation 1-TV are comparable up to time step 300. After this point, lower values of $\epsilon$ perform better than high values of $\epsilon$.
-
-In short, for PIG all values of $\epsilon$ are roughly equal, while for ETPIG low values of $\epsilon$ perform equal or better than higher values of $\epsilon$ in simulation 1-TV.
-
-In the No-TV simulation, lower values of $\epsilon$ generally provided better results than higher values of $\epsilon$. In the case of EPIG, lower values of $\epsilon$ initially had worse results than higher values of $\epsilon$. However, as the learning rate for EPIG in the No-TV simulation was faster for low values of $\epsilon$ than high values of $epsilon$, the value of the KL-divergences for EPIG are comparable. Around time step 600, the KL-divergence of the low values of $\epsilon$ becomes better than that of the high values of $\epsilon$. Since the learning rate of EPIG for simulation No-TV is better for the entire simulation, the KL-divergence of low value $\epsilon$ EPIG after time step 600 is better than that of high value $\epsilon$ EPIG. Whether this changes again at further time steps would require a longer simulation to determine.
-
-
-In ETPIG, on the other hand, lower values of $\epsilon$ have a better KL-divergence than higher values of $\epsilon$ for the entire No-TV simulation. The learning rate of ETPIG for the No-TV simulation is better for high values of $\epsilon$ than lower values of $\epsilon$ up to around time step 350. This means that the KL-divergences of ETPIG for low and high values of $\epsilon$ are comparable until time step 350. After time step 350, lower values of $\epsilon$ have better KL-divergences and faster learning rates than higher values of $\epsilon$.
-
-In short, in both EPIG and ETPIG lower values of $\epsilon$ perform roughly equal or better than high values of $\epsilon$ for the No-TV simulation.
-
-\begin{figure}[p]
-	%Figure~\ref{images/Epsilon_Graphs.pdf}
-	%\includegraphics{images/Epsilon_Graphs.pdf}
-	\includegraphics[scale=0.5]{"images/Epsilon_Distractions_EPIG_4-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Distractions_ETPIG_4-TV.pdf"}
-	%\caption{Distraction Rate Epsilon Comparison EPIG VS ETPIG}
-	%\label{Fig:DRECSim1}
+\begin{figure}
+	\begin{center}
+		\subfloat[4-TV Simulation \label{Fig:DREC4TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Distractions_EPIG_4-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Distractions_ETPIG_4-TV.pdf"}}\hfill
+	\end{center}
+	\begin{center}
+		\subfloat[1-TV Simulation \label{Fig:DREC1TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Distractions_EPIG_1-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Distractions_ETPIG_1-TV.pdf"}}\hfill
+	\end{center}
 	
-	%Figure~\ref{images/Epsilon_Graphs.pdf}
-	%\includegraphics{images/Epsilon_Graphs.pdf}
-	\includegraphics[scale=0.5]{"images/Epsilon_Distractions_EPIG_1-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Distractions_ETPIG_1-TV.pdf"}
-	%\caption{Distraction Rate Epsilon Comparison EPIG VS ETPIG}
-	%\label{Fig:DRECSim2}
-	
-	%Figure~\ref{images/Epsilon_Graphs.pdf}
-	%\includegraphics{images/Epsilon_Graphs.pdf}
-	\includegraphics[scale=0.5]{"images/Epsilon_Distractions_EPIG_No-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Distractions_ETPIG_No-TV.pdf"}
-	\caption{Distraction Rate Epsilon Comparison EPIG VS ETPIG}
-	\label{Fig:DREC}
+	\begin{center}
+		\subfloat[No-TV Simulation \label{Fig:DREC0TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Distractions_EPIG_No-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Distractions_ETPIG_No-TV.pdf"}}\hfill
+	\end{center}
+	\caption{Distraction Rate Epsilon Comparison EPIG VS ETPIG}\label{Fig:DREC}
 	%\label{Fig:DRECSim3}
 	
 	
 	
 \end{figure}
-\begin{figure}[p]
+
+
+\subsection{Distraction Rate}
+In the 4-TV simulation, (\figurename~\ref{Fig:DREC4TV}) The distraction rate decreases as $\epsilon$ increases. This is true in both for EPIG and ETPIG. In EPIG, as $\epsilon$ increases towards 100\% not only does the rate of distraction decrease but the frequency of distraction decreases as well. This is expected behavior, as the more random the algorithm is, the less often it should tend towards its biases, in this case the Noisy-TV.
+
+In ETPIG, the initial rate of distraction is affected by the value of $\epsilon$, but the frequency of distraction is unaffected (Or affected much less). There are some weird artifacts in the case of $\epsilon = 0$, also known as the TPIG case. This suggests that adding some randomness to the TPIG algorithm smooths out some irregular behavior.
+
+In the 1-TV simulation, (\figurename~\ref{Fig:DREC1TV}) the distraction rate decreases as $\epsilon$ increases. This is true for both EPIG and ETPIG. The results for EPIG in the 1-TV simulation are very similar to the 4-TV simulation results. Both the distraction rate and frequency of distraction decrease as $\epsilon$ increases.
+
+In ETPIG, however, the results are slightly different for the 1-TV simulation compared to the 4-TV simulation. Unlike the 4-TV simulation, in the 1-TV simulation, the distraction rate and frequency for the ETPIG algorithm approach towards the Random Walk algorithm ($\epsilon = 100$). This is very interesting, as it suggests that the ETPIG algorithm has figured out the Noisy-TV's and is now avoiding them, performing better than the Random Walk baseline. Around time-step 100, there is a point when all the ETPIG policies pivot. This suggests that ETPIG may perform worse for smaller amounts of time when it has a low value of $\epsilon$. There are still weird artifacts in the case of $\epsilon = 0$, with TPIG performing much worse initially than its ETPIG counterpart. Similarly, TPIG does not appear to converge to the Random Walk algorithm, unlike its $\epsilon$-greedy counterpart ETPIG. Whether this is true for large time-steps or not cannot be determined without longer simulations. 
+
+In the No-TV simulation, (\figurename~\ref{Fig:DREC0TV}) there is no Noisy-TV to distract any of the algorithms. As such, all the algorithms perform equally well on this metric and are never distracted. As such, the graph is a flat line.
+\begin{figure}
+	\begin{center}
+		\subfloat[4-TV Simulation \label{Fig:EMEC4TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_EPIG_4-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_ETPIG_4-TV.pdf"}}\hfill
+	\end{center}
 	
-	\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_EPIG_4-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_ETPIG_4-TV.pdf"}
-	%\caption{Missed States Epsilon Comparison EPIG VS ETPIG}
-	%\label{Fig:EMECSim1}
+	\begin{center}
+		\subfloat[1-TV Simulation \label{Fig:EMEC1TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_EPIG_1-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_ETPIG_1-TV.pdf"}}\hfill
+	\end{center}
 	
-	\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_EPIG_1-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_ETPIG_1-TV.pdf"}
-	%\caption{Missed States Epsilon Comparison EPIG VS ETPIG}
-	%\label{Fig:EMECSim2}
-	
-	\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_EPIG_No-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_ETPIG_No-TV.pdf"}
+	\begin{center}
+		\subfloat[No-TV Simulation \label{Fig:EMEC0TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_EPIG_No-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Missed_States_ETPIG_No-TV.pdf"}}\hfill
+	\end{center}
 	\caption{Missed States Epsilon Comparison EPIG VS ETPIG}
 	\label{Fig:EMEC}
-	%\label{Fig:EMECSim3}
 	
 \end{figure}
-\begin{figure}[p]
+\subsection{Learning Rate}
+In the 4-TV simulation, (\figurename~\ref{Fig:EMEC4TV}) higher values of $\epsilon$ generally provided better results than lower values of $\epsilon$. In the case of EPIG, although higher values of $\epsilon$ performed worse initially, they performed better than low values of $\epsilon$ after around time step 350. On the contrary, lower values of $\epsilon$ fell off at around the same point, performing worse in the end.
+
+In ETPIG, however, high values of $\epsilon$ performed better throughout the entire simulation. Low values of $\epsilon$ performed worse initially, but approached and matched the performance of high $\epsilon$ values at around time step 250. From that time onward, all values of $\epsilon$ seem to perform roughly equally.
+
+In the 1-TV simulation, (\figurename~\ref{Fig:EMEC1TV}) the results were significantly different from those of the 4-TV simulation. Low values of $\epsilon$ performed better for both EPIG and ETPIG in the 4-TV simulation than their high $\epsilon$ valued counterparts. In the case of EPIG, low values of $\epsilon$ performed better than high values of $\epsilon$ for the entire simulation. High values of $\epsilon$ do tend to approach lower values of $\epsilon$ as the simulation continues, but to determine whether they converge or not would require longer simulations.
+
+In ETPIG, however, low values of $\epsilon$ performed worse initially, but surpassed high values of $\epsilon$ around time step 300. Unlike in the 4-TV simulation, in the 1-TV simulation, ETPIG is clearly better with lower values of $\epsilon$ towards later time steps.
+
+In the No-TV simulation, (\figurename~\ref{Fig:EMEC0TV}) the results were very similar to those of the 1-TV simulation. In the case of EPIG, although the scales are different (As expected of two simulations of different size), the relationships between the different values of $\epsilon$ and how their graphs behave were nearly identical.
+
+In ETPIG, a similar thing is true. The results for ETPIG in the 1-TV and No-TV simulations are extremely similar, with the main difference being the time step when the graph pivots and low values of $\epsilon$ becomes better than high values of $\epsilon$. This change is probably a result of the simulation size changing, as the crossover point shifts forward in time as the size of the simulation increases. In simulation 4-TV, this point is at time step 200, while it is at time step 300 in simulation 1-TV and time step 400 in simulation No-TV.
+\begin{figure}
 	
-	\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_EPIG_4-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_ETPIG_4-TV.pdf"}
-	%\caption{Model Accuracy Epsilon Comparison EPIG VS ETPIG}
-	%\label{Fig:EAECSim1}
+	\begin{center}
+		\subfloat[4-TV Simulation \label{Fig:EAEC4TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_EPIG_4-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_ETPIG_4-TV.pdf"}}\hfill
+	\end{center}
 	
-	\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_EPIG_1-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_ETPIG_1-TV.pdf"}
-	%\caption{Model Accuracy Epsilon Comparison EPIG VS ETPIG}
-	%\label{Fig:EAECSim2}
+	\begin{center}
+		\subfloat[1-TV Simulation \label{Fig:EAEC1TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_EPIG_1-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_ETPIG_1-TV.pdf"}}\hfill
+	\end{center}
 	
-	\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_EPIG_No-TV.pdf"}
-	\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_ETPIG_No-TV.pdf"}
+	\begin{center}
+		\subfloat[No-TV Simulation \label{Fig:EAEC0TV}]{
+			\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_EPIG_No-TV.pdf"}
+			\includegraphics[scale=0.5]{"images/Epsilon_Model_Accuracy_ETPIG_No-TV.pdf"}}\hfill
+	\end{center}
 	\caption{Model Accuracy Epsilon Comparison EPIG VS ETPIG}
 	\label{Fig:EAEC}
-	%\label{Fig:EAECSim3}
 	
 \end{figure}
+\subsection{Model Accuracy}
+As a metric, the Kullback-Leibler divergence alone cannot provide an accurate measurement. This is because the Kullback-Leibler divergence returns an infinity whenever a state transition is in the true distribution, but not in the agent's model. To allow for any visible results on this metric, I have replaced all of these infinities with 0 when taking these measurements. To provide any meaningful analysis, the Kullback-Leibler divergence is used in conjunction with the learning rate discussed in the previous section. Every explored state adds a positive value to the KL-divergence total. As such, if two agents had the same Kullback-Leibler divergence with the true distribution $\Theta$ but agent 1 had discovered more states than agent 2, than agent 1 performed better than agent 2.
+
+In the 4-TV simulation, (\figurename~\ref{Fig:EAEC4TV}) higher values of $\epsilon$ had a worse performance than lower values of $\epsilon$. In the case of EPIG, middle values of $\epsilon$ performed better than both high and low values of $\epsilon$. Although high values of $\epsilon$ performed better initially, they performed worse for larger values of time. In addition, since high values of $\epsilon$ performed worse than low values of $\epsilon$ for the related learning rate metric, high values of $epsilon$ performed worse than it appears, being comparable to the other values of $\epsilon$ in the beginning time steps. In later time steps, although high values of $\epsilon$ had a worse KL-divergence, they had discovered more states then the other values of $\epsilon$ making them comparable if not better. 
+
+Low values of $\epsilon$ had a worse KL-divergence initially, but rapidly converged to the other values of $\epsilon$ in the middle stages of time before falling off towards the end of the simulation. Since low values of $\epsilon$ performed well initially with respect to learning rate before falling off and performing the worst towards the end of the simulation, we can determine that low values of $\epsilon$ performed comparable to the other values of $\epsilon$ at the start of the simulation, but performed the worst of all the $epsilon$ values by the end.
+
+%In short, for EPIG in the 4-TV simulation, high values of $\epsilon$ are comparable to middle values of $\epsilon$, while low values of $\epsilon$ performed badly.
+
+In ETPIG, however, low values of $\epsilon$ remained better than high values of $\epsilon$ for the entire simulation. At the beginning of the simulation, lower values of $\epsilon$ had a worse learning rate, making their KL-divergence performance comparable to the other $\epsilon$ values. However, the learning rate for all the $\epsilon$ values converge around time step 200. Since low values of $\epsilon$ still have the lowest KL-divergence of all the $\epsilon$'s after time step 200, in the 4-TV simulation lower values of $\epsilon$ have better performance than higher values of $\epsilon$ for the ETPIG algorithm.
+
+In the 1-TV simulation, (\figurename~\ref{Fig:EAEC1TV}) $\epsilon$ had different effects on EPIG and ETPIG. In the case of EPIG, higher values of $\epsilon$ performed better and had lower KL-divergences than lower values of $\epsilon$. However, since the learning rate of performed inverse to this, (where high values of $\epsilon$ performed worse than low values of $\epsilon$), the KL-divergences among the different values of $\epsilon$ for EPIG are comparable to each other.
+
+In ETPIG, however, the lower values of $\epsilon$ performed better than the higher values of $\epsilon$ for the entire simulation. The learning rate of ETPIG in the 1-TV simulation performs better for high values of $\epsilon$ than low values of $\epsilon$ before time step 300. After that point, low values of $\epsilon$ perform better than high values of $\epsilon$. This means that the KL-divergences of ETPIG for simulation 1-TV are comparable up to time step 300. After this point, lower values of $\epsilon$ perform better than high values of $\epsilon$.
+
+%In short, for PIG all values of $\epsilon$ are roughly equal, while for ETPIG low values of $\epsilon$ perform equal or better than higher values of $\epsilon$ in simulation 1-TV.
+
+In the No-TV simulation, (\figurename~\ref{Fig:EAEC0TV}) lower values of $\epsilon$ generally provided better results than higher values of $\epsilon$. In the case of EPIG, lower values of $\epsilon$ initially had worse results than higher values of $\epsilon$. However, as the learning rate for EPIG in the No-TV simulation was faster for low values of $\epsilon$ than high values of $epsilon$, the value of the KL-divergences for EPIG are comparable. Around time step 600, the KL-divergence of the low values of $\epsilon$ becomes better than that of the high values of $\epsilon$. Since the learning rate of EPIG for simulation No-TV is better for the entire simulation, the KL-divergence of low value $\epsilon$ EPIG after time step 600 is better than that of high value $\epsilon$ EPIG. Whether this changes again at further time steps would require a longer simulation to determine.
+
+
+In ETPIG, on the other hand, lower values of $\epsilon$ have a better KL-divergence than higher values of $\epsilon$ for the entire No-TV simulation. The learning rate of ETPIG for the No-TV simulation is better for high values of $\epsilon$ than lower values of $\epsilon$ up to around time step 350. This means that the KL-divergences of ETPIG for low and high values of $\epsilon$ are comparable until time step 350. After time step 350, lower values of $\epsilon$ have better KL-divergences and faster learning rates than higher values of $\epsilon$.
+
+%In short, in both EPIG and ETPIG lower values of $\epsilon$ perform roughly equal or better than high values of $\epsilon$ for the No-TV simulation.
+
+
 
 \chapter{Conclusions}
 The TPIG algorithm performed better than the PIG algorithm in all three metrics. TPIG was distracted by the Noisy-TV less than PIG. TPIG was able to explore and find new states faster than PIG was. TPIG was able to model the true distribution $\Theta$ more closely than PIG.
