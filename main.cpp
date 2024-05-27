@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 #include "simulation.h"
 #include "simLogger.h"
 #include "randWalk.h"
@@ -23,6 +24,12 @@ void TestPolicy(string filename, int seed);
 void printAction(Action a);
 StateTransition getSAS(State s, Action a, Simulation *sim);
 
+void usage(char **args)
+{
+  cerr << args[0] << " [-t] filename\n";
+  exit(1);
+}
+
 int main(int argc, char** argv)
 {
 	// Initialize variables
@@ -40,7 +47,15 @@ int main(int argc, char** argv)
 	int episodeLength = 1000;
 	int seed = 0;
 	int count = 0;
-	
+
+	if(argc == 3)
+	  {
+	    if(strcmp(argv[1],"-t"))
+	      usage(argv);
+	    TestSim(argv[2]);
+	    exit(0);
+	  }
+
 	for (int i = 0; i < numEpochs; i++)
 		for (int j = 0; j < numEpisodes; j++)
 		{
@@ -82,7 +97,7 @@ int main(int argc, char** argv)
 	//TestPolicy("TestSim.sim", 42);
 	//TestPolicy("NoTvSim.sim", 42);
 	//TestPolicy("Simulation.sim", 42);
-	//TestSim("TestSim.sim");
+	// TestSim("TestSim.sim");
 	// Set variables
 	// Epochs Loop (Loop once for each Episode)
 		// Episode Loop (Loop over time-steps t)

@@ -42,6 +42,14 @@ static void line(ofstream& fout,int x1,int y1,int x2,int y2)
   fout << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << endl;
 }
 
+static void arrow(ofstream& fout,int x1,int y1,int x2,int y2)
+{
+  cout << "creating arrow\n";
+  fout << "2 1 0 1 0 7 50 -1 -1 0.000 0 0 -1 1 0 2\n";
+  fout << "1 1 1.00 60.00 120.00\n";
+  fout << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << endl;
+}
+
 // Given three points, find the center of the circle that passes
 // through them.  If the points are colinear, then no solution exists,
 // so return false. Note: this is also a test for colinearity between
@@ -143,16 +151,52 @@ bool Simulation::printSimPDF(string outFileName)
 	{
 	  // horizontal line on top
 	  if(states[j][i].up == '-')
-	    line(fout,i*CELLSIZE,j*CELLSIZE,(i+1)*CELLSIZE,j*CELLSIZE);
+	    {
+	      line(fout,i*CELLSIZE,j*CELLSIZE,(i+1)*CELLSIZE,j*CELLSIZE);
+	      // if not topmost line in image, could be one-way wall
+	      if((j>0) &&
+		 (states[j-1][i].down != '-') &&
+		 (states[j-1][i].down != 'v'))
+		arrow(fout,
+		      i*CELLSIZE+CELLSIZE/2,j*CELLSIZE-CELLSIZE/3,
+		      i*CELLSIZE+CELLSIZE/2,j*CELLSIZE+CELLSIZE/3);
+	    }
 	  // horizontal line on bottom
 	  if(states[j][i].down == '-')
-	    line(fout,i*CELLSIZE,(j+1)*CELLSIZE,(i+1)*CELLSIZE,(j+1)*CELLSIZE);
+	    // if not bottommost line in image, could be one-way wall
+	    {
+	      line(fout,i*CELLSIZE,(j+1)*CELLSIZE,(i+1)*CELLSIZE,(j+1)*CELLSIZE);
+	      if((j<(height-1)) &&
+		 (states[j+1][i].up != '-') &&
+		 (states[j+1][i].up != '^'))
+		arrow(fout,
+		      i*CELLSIZE+CELLSIZE/2,(j+1)*CELLSIZE+CELLSIZE/3,
+		      i*CELLSIZE+CELLSIZE/2,(j+1)*CELLSIZE-CELLSIZE/3);
+	    }
 	  // vertical line on left
 	  if(states[j][i].left == '|')
-	    line(fout,i*CELLSIZE,j*CELLSIZE,i*CELLSIZE,(j+1)*CELLSIZE);
+	    {
+	      line(fout,i*CELLSIZE,j*CELLSIZE,i*CELLSIZE,(j+1)*CELLSIZE);
+	      // if not leftmost column in image, could be one-way wall
+	      if((i>0) &&
+		 (states[j][i-1].right != '-') &&
+		 (states[j][i-1].right != '>'))
+		arrow(fout,
+		      i*CELLSIZE-CELLSIZE/3,j*CELLSIZE+CELLSIZE/2,
+		      i*CELLSIZE+CELLSIZE/3,j*CELLSIZE+CELLSIZE/2);
+	    }
 	  // vertical line on right
 	  if(states[j][i].right == '|')
-	    line(fout,(i+1)*CELLSIZE,j*CELLSIZE,(i+1)*CELLSIZE,(j+1)*CELLSIZE);
+	    {
+	      line(fout,(i+1)*CELLSIZE,j*CELLSIZE,(i+1)*CELLSIZE,(j+1)*CELLSIZE);
+	      // if not rightmost column in image, could be one-way wall
+	      if((i<(width-1)) &&
+		 (states[j][i+1].left != '-') &&
+		 (states[j][i+1].left != '<'))
+		arrow(fout,
+		      (i+1)*CELLSIZE+CELLSIZE/3,j*CELLSIZE+CELLSIZE/2,
+		      (i+1)*CELLSIZE-CELLSIZE/3,j*CELLSIZE+CELLSIZE/2);
+	    }
 	  // horizontal arch on top
 	  if(states[j][i].up == '^')
 	    {
