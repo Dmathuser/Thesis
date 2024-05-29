@@ -1,0 +1,431 @@
+\input{preamble}
+
+\title{Temporal PIG: Improving PIG to Resist the Noisy-TV Problem}
+\subtitle{Thesis Defense}
+\author{David Mathews}
+\institute[SDSMT]{South Dakota School of Mines and Technology}
+
+\bibliographystyle{IEEEtran}
+
+
+%\usetheme{Warsaw}
+\usepackage{bm}
+\usepackage{amsmath}
+%\usepackage{newtxtext,newtxmath}
+\usepackage{array}
+\usepackage{subfigure}
+\setlength{\extrarowheight}{2pt}
+
+\newcommand{\real}{\mathbb{R}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+\usepackage{calligra}
+\usepackage{hyperref}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\begin{document}
+	
+	\begin{frame}{}
+		\maketitle
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Outline}
+		\begin{itemize}
+			\item {Reinforcement Learning}
+			\item {Intrinsic Motivation}
+			\item {Noisy-TV}
+			\item {Predicted Information Gain(PIG)}
+			\item {Temporal PIG (TPIG)}
+			\item {Methods}
+			\item {Results}
+			\item {Conclusions}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Reinforcement Learning}
+		\begin{itemize}
+			\item {Agent}
+			\item {Environment}
+			\item {$a \in A$ - Actions}
+			\item {$s \in S$ - States}
+			\item { $\Theta_{s,a,s'}$ - Transition probability from $s$ to $s'$ after taking $a$.}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Intrinsic Motivation}
+		\begin{itemize}
+			\item {Sparse environmental rewards make learning hard}
+			\begin{itemize}
+				\item {Robot Exploring a Maze}
+			\end{itemize}
+			\item {Internal reward, not external reward}
+			\begin{itemize}
+				\item {Reward agent for exploring!}
+				\item {Prone to noise}
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Noisy-TV}
+		\begin{itemize}
+			\item {State that creates noise when specific action is taken}
+			\item {State has Noisy-TV and remote control}
+			\begin{itemize}
+				\item {When control is pressed, flips to random channel on TV}
+				\item {High novelty, low value}
+			\end{itemize}
+			\item {Noisy-TV distracts most Intrinsic Reward systems}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Kullback-Leibler Divergence}
+		\[D_{KL} (P || Q) := \sum_{x \in X} P(x) \log(\frac{P(x)}{Q(x)})\]
+		
+		\begin{itemize}
+			\item {KL-divergence calculates how similar two probability distributions are}
+			\item {Value is large if not similar and close to 0 if similar}
+			\item {Commonly used to measure information gain}
+			\begin{itemize}
+				\item {Information Gain from using P instead of Q}
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Predicted Information Gain (PIG)}
+		\[D_{KL} (\Theta_{as\cdot} || \hat{\Theta}_{as\cdot}) := \sum_{s' = 1}^{ N} \Theta_{ass'} \log_{2}(\frac{\Theta_{ass'}}{\hat{\Theta}_{ass'}})   \]
+		
+		\[ PIG(a,s) := \sum_{s*} \hat{\Theta}_{ass^{*}} D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot}) \]
+		\begin{itemize}
+			\item {Exploration Algorithm using Information Theory}
+			\item {Uses KL-divergence to calculate difference in Probability Distributions}
+			\item {Takes the action that gives the agent the most information}
+			\item {Still suffers from Noisy-TV}
+		\end{itemize}
+	\end{frame}
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Temporal Predicted Information Gain (TPIG)}
+		\[Reward(s,a,s') := D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t-1} || \hat{\Theta}_{as\cdot}^{t-1}) - D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t} || \hat{\Theta}_{as\cdot}^{t})\]
+		\begin{itemize}
+			\item {Goal: Make PIG less prone to Noisy-TV}
+			\item {How? Confirmation.}
+			\begin{itemize}
+				\item {After each time-step, recalculate PIG using new model}
+				\item {Compare calculations before and after time step}
+				\item {If information was learned, new calculation should be less than old one, since less information is left}
+				\item {Use this difference as Intrinsic reward instead}
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	\begin{frame}[fragile]{Temporal Predicted Information Gain (TPIG)}
+		\[Q(s,a) \leftarrow Q(s,a) + \alpha [r + \gamma *  \argmax_{a'} Q(s',a') + Q(s,a)]\]
+		\[Q_{new} = Q_{old} + \alpha(Reward + \gamma Q_{new} - Q_{old})\]
+		
+		\[ TPIG(s) = \argmax_a  Q(s,a)\]
+		\begin{itemize}
+			\item Create model using temporal difference learning
+			\begin{itemize}
+				\item {$\alpha$ is learning rate (0.9)}
+				\item {$\gamma$ is discount factor (0.9)}
+			\end{itemize}
+			\item Update the model using internal rewards.
+		\end{itemize}
+	\end{frame}
+	
+		
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Epsilon Greedy PIG and TPIG}
+		\begin{itemize}
+			\item {$\epsilon$-greedy algorithms have an $\epsilon$\% chance of taking random action instead}
+			\item {Helps algorithms avoid loops and explore new areas.}
+			\item {$\epsilon$ is 10\% by default}
+			\item {EPIG and ETPIG}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	\begin{frame}[fragile]{Methods}
+		\begin{itemize}
+			\item {Test PIG, TPIG, EPIG, ETPIG, and Random Action Baseline}
+			\item {Comparison Metrics}
+			\begin{itemize}
+				\item {Learning Rate (Amount explored in environment)}
+				\item {Distraction Rate (How many times Noisy TV is used)}
+				\item {Internal Model Accuracy (KL-divergence between True Model and Agent's Model)}
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Simulation Details}
+		\begin{itemize}
+			\item {Gridworld Simulation}
+			%\item {Random Starting state $s$ from set of starting states $S$}
+			\item {Every state has 4 actions (up, down, left, right)}
+			\item {Moving into wall will return agent to its current state}
+			\item {Moving into Noisy-TV will set Noisy-TV state variable to random number}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	\begin{frame}[fragile]{Simulations}
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.70]{"../images/4-TV.pdf"}
+				\includegraphics[scale=0.70]{"../images/1-TV.pdf"}
+				\includegraphics[scale=0.70]{"../images/No-TV.pdf"}
+			\end{center}
+			\caption{Three example simulations. Each semi-circle is a Noisy-TV. Arrows are one way walls.}
+			\label{Fig:Sim}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	\begin{frame}[fragile]{Results (Distraction Rate)}
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.40]{"../images/Distraction_Rate_4-TV.pdf"}
+				\includegraphics[scale=0.40]{"../images/Distraction_Rate_1-TV.pdf"}
+			\end{center}
+			\caption{Distraction Rate of all Five Policies}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Distraction Rate)}
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.40]{"../images/Distraction_Rate_No-TV.pdf"}
+				\includegraphics[scale=0.40]{"../images/Distraction_Rate_1-TV.pdf"}
+			\end{center}
+			\caption{Distraction Rate of all Five Policies}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Learning Rate)}
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.40]{"../images/Missed_States_4-TV.pdf"}
+				\includegraphics[scale=0.40]{"../images/Missed_States_1-TV.pdf"}
+			\end{center}
+			\caption{Learning Rate of all Five Policies}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Learning Rate)}
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.40]{"../images/Missed_States_No-TV.pdf"}
+				\includegraphics[scale=0.40]{"../images/Missed_States_1-TV.pdf"}
+			\end{center}
+			\caption{Learning Rate of all Five Policies}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	
+	\begin{frame}[fragile]{Results (Model Accuracy 4-TV)}
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.40]{"../images/Missed_States_4-TV.pdf"}
+				\includegraphics[scale=0.40]{"../images/Model_Accuracy_4-TV.pdf"}
+			\end{center}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Model Accuracy 1-TV)}
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.40]{"../images/Missed_States_1-TV.pdf"}
+				\includegraphics[scale=0.40]{"../images/Model_Accuracy_1-TV.pdf"}
+			\end{center}
+			\caption{Model Accuracy of all Five Policies}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Model Accuracy No-TV)}
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.40]{"../images/Missed_States_No-TV.pdf"}
+				\includegraphics[scale=0.40]{"../images/Model_Accuracy_No-TV.pdf"}
+			\end{center}
+			\caption{Model Accuracy of all Five Policies}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison 4-TV)}
+		\begin{figure}
+			\begin{center}
+				\subfigure[4-TV EPIG Simulation \label{Fig:DRECEP4TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Distractions_EPIG_4-TV.pdf"}}			
+				\subfigure[4-TV ETPIG Simulation \label{Fig:DRECET4TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Distractions_ETPIG_4-TV.pdf"}}
+			\end{center}
+			\caption{Distraction Rate Epsilon Comparison EPIG VS ETPIG 4-TV Simulation}
+			\label{Fig:DREC4TV}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison 1-TV)}
+		\begin{figure}	
+			\begin{center}
+				\subfigure[1-TV EPIG Simulation \label{Fig:DRECEP1TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Distractions_EPIG_1-TV.pdf"}}
+				\subfigure[1-TV ETPIG Simulation \label{Fig:DRECET1TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Distractions_ETPIG_1-TV.pdf"}}
+			\end{center}
+			\caption{Distraction Rate Epsilon Comparison EPIG VS ETPIG 1-TV Simulation}
+			\label{Fig:DREC1TV}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison No-TV)}
+		\begin{figure}	
+			\begin{center}
+				\subfigure[No-TV EPIG Simulation \label{Fig:DRECEP0TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Distractions_EPIG_No-TV.pdf"}}				
+				\subfigure[No-TV ETPIG Simulation \label{Fig:DRECET0TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Distractions_ETPIG_No-TV.pdf"}}
+			\end{center}	
+			\caption{Distraction Rate Epsilon Comparison EPIG VS ETPIG No-TV Simulation}
+			\label{Fig:DREC0TV}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison 4-TV)}
+		\begin{figure}
+			\begin{center}
+				\subfigure[4-TV EPIG Simulation \label{Fig:EMECEP4TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Missed_States_EPIG_4-TV.pdf"}}
+				\subfigure[4-TV ETPIG Simulation \label{Fig:EMECET4TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Missed_States_ETPIG_4-TV.pdf"}}
+			\end{center}
+			\caption{Missed States Epsilon Comparison EPIG VS ETPIG 4-TV Simulation}
+			\label{Fig:EMEC4TV}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison 1-TV)}
+		\begin{figure}
+			\begin{center}
+				\subfigure[1-TV EPIG Simulation \label{Fig:EMECEP1TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Missed_States_EPIG_1-TV.pdf"}}
+				\subfigure[1-TV ETPIG Simulation \label{Fig:EMECET1TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Missed_States_ETPIG_1-TV.pdf"}}
+			\end{center}
+			\caption{Missed States Epsilon Comparison EPIG VS ETPIG 1-TV Simulation}
+			\label{Fig:EMEC1TV}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison No-TV)}
+	\begin{figure}
+		\begin{center}
+			\subfigure[No-TV EPIG Simulation \label{Fig:EMECEP0TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Missed_States_EPIG_No-TV.pdf"}}
+			\subfigure[No-TV ETPIG Simulation \label{Fig:EMECET0TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Missed_States_ETPIG_No-TV.pdf"}}
+		\end{center}
+		\caption{Missed States Epsilon Comparison EPIG VS ETPIG No-TV Simulation}
+		\label{Fig:EMEC0TV}
+	\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison 4-TV)}
+		\begin{figure}
+			\begin{center}
+				\subfigure[4-TV EPIG Simulation \label{Fig:EAECEP4TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Model_Accuracy_EPIG_4-TV.pdf"}}\hfill
+				\subfigure[4-TV ETPIG Simulation \label{Fig:EAECET4TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Model_Accuracy_ETPIG_4-TV.pdf"}}\hfill
+			\end{center}
+			\caption{Model Accuracy Epsilon Comparison EPIG VS ETPIG 4-TV Simulation}
+			\label{Fig:EAEC4TV}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison 1-TV)}
+		\begin{figure}
+			\begin{center}
+				\subfigure[1-TV EPIG Simulation \label{Fig:EAECEP1TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Model_Accuracy_EPIG_1-TV.pdf"}}\hfill
+				\subfigure[1-TV ETPIG Simulation \label{Fig:EAECET1TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Model_Accuracy_ETPIG_1-TV.pdf"}}\hfill
+			\end{center}
+			\caption{Model Accuracy Epsilon Comparison EPIG VS ETPIG 1-TV Simulation}
+			\label{Fig:EAEC1TV}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Results (Epsilon Comparison No-TV)}
+		\begin{figure}
+			\begin{center}
+				\subfigure[No-TV EPIG Simulation \label{Fig:EAECEP0TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Model_Accuracy_EPIG_No-TV.pdf"}}\hfill
+				\subfigure[No-TV ETPIG Simulation \label{Fig:EAECET0TV}]{\includegraphics[scale=0.4]{"../images/Epsilon_Model_Accuracy_ETPIG_No-TV.pdf"}}\hfill
+			\end{center}
+			\caption{Model Accuracy Epsilon Comparison EPIG VS ETPIG No-TV Simulation}
+			\label{Fig:EAEC0TV}
+		\end{figure}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	\begin{frame}[fragile]{Conclusions}
+		\begin{itemize}
+			\item {TPIG performs better than PIG for all three testing metrics}
+			\begin{itemize}
+				\item {Distraction Rate}
+				\item {Learning Rate}
+				\item {Model Accuracy}
+			\end{itemize}
+			\item {PIG learns faster initially, but TPIG creates a better model for long simulations}
+			\item {Epsilon can further decrease the Distraction Rate, but at the cost of model accuracy}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	\begin{frame}[fragile]{Future Work}
+		\begin{itemize}
+			\item {TPIG can be expanded to continuous domain}
+			\item {Compare TPIG to other Reinforcement Learning algorithms}
+			\item {Expand TPIG to also use external reward}
+		\end{itemize}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\begin{frame}[fragile]{Questions?}
+	\end{frame}
+	
+	%------------------------------------------------------------------
+	
+	\end{document}
+	\input{..\images}
+							

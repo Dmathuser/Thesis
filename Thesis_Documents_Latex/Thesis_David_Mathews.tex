@@ -83,7 +83,7 @@
 \signatureline{Major Professor --- Larry D. Pyeatt, Ph.D., Department of
 	Electrical Engineering and Computer Science}
 
-\signatureline{Graduate Division Representative --- Roger W Johnson, Ph.D.,
+\signatureline{Graduate Division Representative --- Roger W. Johnson, Ph.D.,
 	Department of Mathematics}
 
 \signatureline{Committee Member --- Christer Karlsson, Ph.D., Department of
@@ -105,7 +105,7 @@
 \preliminaries
 
 \begin{abstract}
-I present an improvement to the standard PIG algorithm to make it less prone to the Noisy-TV problem. This improvement uses temporal difference learning over the information gain to avoid distraction and promote learning.
+I present an improvement to the standard PIG algorithm to make it less prone to the Noisy-TV problem and call it TPIG. (Temporal Predicted Information Gain) This improvement uses temporal difference learning over the information gain to avoid distraction and promote learning. I test TPIG on its rate of distraction, learning rate, and model accuracy over three different simulations. From the results, TPIG was found to be more effective than PIG in all three testing categories over all three simulations. TPIG shows great promise and further work should be done to expand on this field of research.
 \end{abstract}
 
 %% Uncomment the following if you want acknowledgements
@@ -115,11 +115,11 @@ I present an improvement to the standard PIG algorithm to make it less prone to 
 
 
 %\begin{comment}
-%\tableofcontents
-%
+\tableofcontents
+
 %\listoftables
-%
-%\listoffigures
+
+\listoffigures
 %\end{comment}
 
 
@@ -255,7 +255,7 @@ As such, I suggest changing the PIG algorithm to make it more robust to the Nois
 %Include methods for testing to determine Thesis statement validity.
 To determine the validity of the TPIG method, a grid-world simulation (described below) will be created. The original PIG algorithm, the TPIG algorithm, and a random action baseline will be tested on the simulation and their results compared. $\epsilon$-greedy versions of the PIG and TPIG algorithms will also be tested.
 
-The full project will be available on github.\cite{TPIG:github} This repository will include the simulations used in this paper along with the data gathered and a final copy of this document.
+The full project will be available on GitHub.\cite{TPIG:github} This repository will include the simulations used in this paper along with the data gathered and a final copy of this document.
 
 \subsection{Metrics}
 The metrics for comparison will be the learning rate (How fast the algorithms approach an optimal solution), the distraction rate (How many times the agent views the Noisy TV), and the internal model accuracy (The KL-divergence between the true model and the agent's model after a given amount of time). These measurements will be taken every time-step and recorded. Their results will then be graphed and compared to each other.
@@ -274,7 +274,7 @@ Multiple simulations will be used for testing. Each simulation will have a diffe
 		\includegraphics[scale=0.75]{"images/1-TV.pdf"}
 		\includegraphics[scale=0.75]{"images/No-TV.pdf"}
 	\end{center}
-	\caption{Three example simulations. Each semi-circle represents a Noisy-TV}
+	\caption{Three example simulations. Each semi-circle is a Noisy-TV. Arrows are one way walls.}
 	\label{Fig:Sim}
 \end{figure}
 %True model and internal model for KL-divergence comparisons does not take Noisy-TV variable into account. This prevents exploding KL-divergences and represents how the Noisy TV has to effect on state transitions and is just noise.
@@ -284,6 +284,8 @@ Multiple simulations will be used for testing. Each simulation will have a diffe
 The simulations are a grid world. Agents can move in any of the four cardinal directions. If an agent walks into a wall, it does not change states. Every simulation is stored in a file for later access and use.
 \subsection{Diagrams}
 Three simulations were used to test the agent and its policies. Each policy was tested on all three simulations. These simulations are shown in \figurename~\ref{Fig:Sim}. The first of these is a 4x4 and has multiple Noisy-TV's. The second is a 5x5 with a single Noisy-TV. The final simulation is a 6x6 without any Noisy-TV's. The no-TV simulation serves as a control for how policies act without any distractions.
+
+In this paper, all simulations started in position 5. In the 4-TV simulation, this is the second column, second row. In the 1-TV simulation, this is the first column, second row. in the No-TV simulation, this is the 5th column, second row.
 \subsection{Implementation}
 The simulation program is capable of reading in a simulation from a special ``.sim" file. The user can then forcefully change the agent's location or use the built in ``takeAction" function to move the agent according to the transition rules. The user can also print out simulations to a PDF file for easy viewing.
 
@@ -603,8 +605,8 @@ In ETPIG, (\figurename~\ref{Fig:EMECET0TV}) a similar thing is true. The results
 	\end{center}
 	\caption{Model Accuracy Epsilon Comparison EPIG VS ETPIG No-TV Simulation}
 	\label{Fig:EAEC0TV}
-	
 \end{figure}
+
 \subsection{Model Accuracy}
 As a metric, the Kullback-Leibler divergence alone cannot provide an accurate measurement. This is because the Kullback-Leibler divergence returns an infinity whenever a state transition is in the true distribution, but not in the agent's model. To allow for any visible results on this metric, I have replaced all of these infinities with 0 when taking these measurements. As such, the summation for the Kullback-Leibler divergence has a different number of elements depending on the number of state transitions found by the agent. To provide any meaningful analysis, the Kullback-Leibler divergence is used in conjunction with the learning rate discussed in the previous section. Every explored state adds a positive value to the KL-divergence total. As such, if two agents had the same Kullback-Leibler divergence with the true distribution $\Theta$ but agent 1 had discovered more states than agent 2, than agent 1 performed better than agent 2.
 
