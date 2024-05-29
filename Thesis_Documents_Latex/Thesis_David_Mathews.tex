@@ -170,30 +170,28 @@ I present an improvement to the standard PIG algorithm to make it less prone to 
 	\label{fig:RLagent}
 \end{figure}
 \section{Reinforcement Learning}
-Reinforcement learning (RL) is a subset of Machine Learning where an agent takes actions within an environment to maximize some environmental reward. \cite{Sutton1998} This is a wide field that includes robotic arm manipulation, video game playing, path-planning, and many other areas.
+Reinforcement learning (RL) is a subset of Machine Learning where an agent takes actions within an environment to maximize some environmental reward \cite{Sutton1998}. This is a wide field that includes robotic arm manipulation, video game playing, path-planning, and many other areas.
 
 In RL, the environment is the problem space. In the case of an assembly line, the environment would contain the robot arm, the conveyor belt, the items on the belt, and other related aspects. Every time-step, the environment updates. Items move along the belt, the robot arm shifts, etc.
 
 The agent is the part of the program that learns and adapts to its environment. In the same case of the assembly line, the agent is the robotic arm. Every time-step, the agent receives its current state $s$ from the environment. In our current example, the state can be represented as the angle and rotation of the joints in the arm as well as whether the arm’s gripper is open or closed. Once the agent has received its current state from the environment, it decides what action $a$ to take from the set of all possible actions $A$. In our example, this could be telling the arm’s third motor to move to a specific angle and rotation or activating/releasing the gripper.
 
-When an agent takes an action, it gets feedback from the environment in the form of a reward. This reward is a measure of how good the agent’s choice was. For example, if the robot arm successfully created a product, it could get a reward based on the product’s quality. On the other hand, if the robot arm had smashed into a wall, the agent could get a negative reward known as a punishment. The agent can use these rewards to adjust its behavior to maximize the total reward it can get. An example diagram of a reinforcement learning system is shown in \figurename~\ref{fig:RLagent} 
+When an agent takes an action, it gets feedback from the environment in the form of a reward. This reward is a measure of how good the agent’s choice was. For example, if the robot arm successfully created a product, it could get a reward based on the product’s quality. On the other hand, if the robot arm had smashed into a wall, the agent could get a negative reward known as a punishment. The agent can use these rewards to adjust its behavior to maximize the total reward it can get. An example diagram of a reinforcement learning system is shown in \figurename~\ref{fig:RLagent}.
 
-Taken together, the system works as follows. The environment gives a state $s$ to the agent, who uses that state to determine the action $a$ it takes. The environment then gives a reward $r$ to the agent (usually with the next state $s’$) which it uses to learn whether it should take that action again next time it is in that state.
-
-By repeating this process over many time-steps, the agent will eventually learn the best actions to take in order to maximize the total reward.
+Taken together, the system works as follows. The environment gives a state $s$ to the agent, who uses that state to determine the action $a$ it takes. The environment then gives a reward $r$ to the agent (usually with the next state $s’$) which it uses to learn whether it should take that action again next time it is in that state. By repeating this process over many time-steps, the agent will eventually learn the best actions to take in order to maximize the total reward.
 
 \subsection{Temporal difference learning}
-Temporal difference learning is a common method of reinforcement learning. In temporal difference learning, the agent uses the reward $r$ found to update the value of previous states it has traveled through. The number of previous states that are updated is the value of $N$ in $N$-step temporal difference learning. The value of $N$ is assumed to be $1$ for this study. Temporal difference learning can be done through either value iteration or Q-learning. \cite{Sutton1998}\cite{Ladosz_2022}
+Temporal difference learning is a common method of reinforcement learning. In temporal difference learning, the agent uses the reward $r$ found to update the value of previous states it has traveled through. The number of previous states that are updated is the value of $N$ in $N$-step temporal difference learning. The value of $N$ is assumed to be $1$ for this study. Temporal difference learning can be done through either value iteration or Q-learning \cite{Sutton1998}\cite{Ladosz_2022}.
 \subsubsection{Value Iteration}
 In value iteration, the agent internally stores the value of every state $s$ it has visited. These values are stored in a value function $V(s)$ Whenever the agent takes an action $a$, it uses the reward from taking that action $r$ and the value of the new state $V(s')$ to update the value of $s$ according to the following function:
 
 \begin{equation}
-V(s) \leftarrow V(s) + \alpha [r + \gamma V(s') + V(s)]
+V(s) \leftarrow V(s) + \alpha \left[r + \gamma V(s') + V(s)\right],
 \label{TDLVF}
 \end{equation}
-Where $V(s)$ is the agent's stored value of state $s$, $r$ is the reward for transitioning from $s$ to $s'$, $\alpha$ is the learning rate, and $\gamma$ is the discount factor.\cite{Sutton1998}
+where $V(s)$ is the agent's stored value of state $s$, $r$ is the reward for transitioning from $s$ to $s'$, $\alpha$ is the learning rate, and $\gamma$ is the discount factor \cite{Sutton1998}.
 
-The learning rate $\alpha$ determines how quickly change can happen to $V(s)$. In other words, how quickly the agent can update its internal model when it gets new data. The learning rate is bounded from $(0,1]$. Large values of $\alpha$ (close to 1) cause the agent to rapidly adjust to changes as it finds them. However, this also makes it hard for the agent to hone in on the optimal solution, as it is too easy to over correct. Low values of $\alpha$ on the other hand, take a long time to learn, but approach optimal solutions much more closely in the end. Commonly, reinforcement learning algorithms will reduce the learning rate over time so the agent learns quickly to begin with and then slows down as it approaches its target. This can be done by using the speed of learning (The portion of \ref{TDLVF} inside the square brackets) to calculate $\alpha$. As the agent's value of $V(s)$ approaches the true value of $V(s)$, $\alpha$ will decrease, causing the agent to more slowly approach the true value and avoid jumping over it.
+The learning rate $\alpha$ determines how quickly change can happen to $V(s)$. In other words, how quickly the agent can update its internal model when it gets new data. The learning rate is bounded from $(0,1]$. Large values of $\alpha$ (close to 1) cause the agent to rapidly adjust to changes as it finds them. However, this also makes it hard for the agent to hone in on the optimal solution, as it is too easy to over correct. Low values of $\alpha$ on the other hand, take a long time to learn, but approach optimal solutions much more closely in the end. Commonly, reinforcement learning algorithms will reduce the learning rate over time so the agent learns quickly to begin with and then slows down as it approaches its target. This can be done by using the speed of learning (The portion of \figurename~\ref{TDLVF} inside the square brackets) to calculate $\alpha$. As the agent's value of $V(s)$ approaches the true value of $V(s)$, $\alpha$ will decrease, causing the agent to more slowly approach the true value and avoid jumping over it.
 
 The discount factor $\gamma$ determines what portion of the next state's value $V(s')$ is used to update the current state's value $V(s)$. In other words, $\gamma$ represents how much the agent values future states' reward compared to the immediate reward $r$. The discount factor $\gamma$ is bounded from $(0,1]$. Large values of $\gamma$ (close to 1) cause the agent to value future rewards more. This makes the agent more likely to ignore short-term gains in exchange for long-term payout. On the other hand, small values for $\gamma$ cause the agent to disregard the value of future states, focusing instead on immediate short-term gains.
 \subsubsection{Q-learning}
@@ -205,40 +203,40 @@ Using Q-values instead means that the value is on the portions of the environmen
 
 When using Q-learning, the temporal difference equation becomes as follows:
 \begin{equation}
-	Q(s,a) \leftarrow Q(s,a) + \alpha [r + \gamma *  \argmax_{a'} Q(s',a') + Q(s,a)]
+	Q(s,a) \leftarrow Q(s,a) + \alpha \left[r + \gamma *  \argmax_{a'} Q(s',a') + Q(s,a)\right],
 	\label{eq:TDQVF}
 \end{equation}
-Where $Q(s,a)$ is the Q-value of the best action in the current state $s$ and $Q(s',a')$ is the Q-value of the best action to be taken from the new state $s'$. $r$ is the reward for transitioning from $s$ to $s'$, $\alpha$ is the learning rate and $\gamma$ is the discount factor.\cite{Ladosz_2022}
+where $Q(s,a)$ is the Q-value of the best action in the current state $s$ and $Q(s',a')$ is the Q-value of the best action to be taken from the new state $s'$. $r$ is the reward for transitioning from $s$ to $s'$, $\alpha$ is the learning rate and $\gamma$ is the discount factor \cite{Ladosz_2022}.
 
 \subsection{Intrinsic reward systems}
-Although the above explanation of reinforcement learning works in many cases, it struggles to solve problems where environmental rewards are infrequent or spread sparsely throughout the environment. \cite{DBLP:journals/corr/abs-1908-06976}
-\cite{FToCFaIM:Jurgen}
+Although the above explanation of reinforcement learning works in many cases, it struggles to solve problems where environmental rewards are infrequent or spread sparsely throughout the environment \cite{DBLP:journals/corr/abs-1908-06976}
+\cite{FToCFaIM:Jurgen}.
 One simple example of this is the case of a robot stuck in a maze. Since the robot only gets rewarded when it successfully exits the maze, the robot has no feedback until it succeeds for the first time. For any maze of significantly large size, it is practically impossible for the robot to randomly stumble upon the correct solution. As such, a robot depending on external (environmental) reward to learn is not sufficient to solve this problem.
 
-Intrinsic rewards are one method to allow agents to learn without the presence of environmental rewards. By letting the agent reward itself when it learns about the environment, the agent can learn to maximize its exploration of its environment. Once the agent has explored their environment sufficiently, they can switch to a different algorithm to take advantage of their knowledge. \cite{Rein:VIME}
+Intrinsic rewards are one method to allow agents to learn without the presence of environmental rewards. By letting the agent reward itself when it learns about the environment, the agent can learn to maximize its exploration of its environment. Once the agent has explored their environment sufficiently, they can switch to a different algorithm to take advantage of their knowledge \cite{Rein:VIME}.
 
-One simplistic intrinsic reward system is to reward the agent whenever it finds a state it has never encountered before.  \cite{DBLP:journals/corr/TangHFSCDSTA16} This encourages the agent to seek out new states, allowing it to explore its environment more efficiently. This method has problems as discussed later but is significantly better than random exploration. (Taking random actions)
+One simplistic intrinsic reward system is to reward the agent whenever it finds a state it has never encountered before \cite{DBLP:journals/corr/TangHFSCDSTA16}. This encourages the agent to seek out new states, allowing it to explore its environment more efficiently. This method has problems as discussed later but is significantly better than random exploration. (Taking random actions)
 
 \section{Noisy TV Problem}
-The Noisy TV Problem is a particularly difficult scenario when using intrinsic reward systems in reinforcement learning. \cite{DBLP:journals/corr/abs-2008-04388} The problem is as follows: What if within the environment there was a TV with a remote. Whenever the agent was in front of the TV it could press the remote to switch the TV to a random channel.
+The Noisy TV Problem is a particularly difficult scenario when using intrinsic reward systems in reinforcement learning \cite{DBLP:journals/corr/abs-2008-04388}. The problem is as follows: What if within the environment there was a TV with a remote. Whenever the agent was in front of the TV it could press the remote to switch the TV to a random channel.
 
-Many intrinsic reward systems fall prey to this scenario. For example, the intrinsic reward system above that rewards finding new states would consider the TV to be extremely valuable since all it takes is a single action to find a new state! This is significantly better than exploring around over multiple time-steps to find new areas not seen before. What makes this problem particularly difficult is that the agent cannot tell the difference between moving from state to state around the problem space and pressing the button to flip the channel. Both of these things are taking an action based on a given state. Other intrinsic reward systems such as count-based methods, probabilistic methods, and even memory methods also fall prey to this problem.  \cite{DBLP:journals/corr/abs-1908-06976}
+Many intrinsic reward systems fall prey to this scenario. For example, the intrinsic reward system above that rewards finding new states would consider the TV to be extremely valuable since all it takes is a single action to find a new state! This is significantly better than exploring around over multiple time-steps to find new areas not seen before. What makes this problem particularly difficult is that the agent cannot tell the difference between moving from state to state around the problem space and pressing the button to flip the channel. Both of these things are taking an action based on a given state. Other intrinsic reward systems such as count-based methods, probabilistic methods, and even memory methods also fall prey to this problem \cite{DBLP:journals/corr/abs-1908-06976}.
 
 \section{Predicted Information Gain (PIG)}
-PIG is an algorithm that uses information theory to maximize exploration of the environment. \cite{10.3389/fncir.2013.00037} PIG functions by predicting how much information about the environment the agent will learn for each action it could take, then taking the action with the most information gain. This means that PIG focuses on creating the best model of the world it can, rather than maximizing the reward obtained from the environment.
+PIG is an algorithm that uses information theory to maximize exploration of the environment \cite{10.3389/fncir.2013.00037}. PIG functions by predicting how much information about the environment the agent will learn for each action it could take, then taking the action with the most information gain. This means that PIG focuses on creating the best model of the world it can, rather than maximizing the reward obtained from the environment.
 
 \subsection{KL-Divergence}
 To determine the amount of information that can be gained from entering a new state, PIG uses the Kullback-Leibler (KL) divergence. The KL-divergence determines the similarity of two probability distributions. In our case, it is the average amount of information that would be lost if we represented one probability distribution with code optimized for the other distribution.
 
 The equation for the KL-divergence is as follows:
-\[D_{KL} (\Theta_{as\cdot} || \hat{\Theta}_{as\cdot}) := \sum_{s' = 1}^{ N} \Theta_{ass'} \log_{2}(\frac{\Theta_{ass'}}{\hat{\Theta}_{ass'}})   \]
-Where $\Theta$ is the true probabilities of state transition from state $s$ to state $s'$ by taking action $a$, $\hat{\Theta}$ is the agent's estimation of $\Theta$ based on its experiences, and $N$ is the number of valid possible state transitions from $s$ to $s'$.
+\[D_{KL} (\Theta_{as\cdot} || \hat{\Theta}_{as\cdot}) := \sum_{s' = 1}^{ N} \Theta_{ass'} \log_{2}\left(\frac{\Theta_{ass'}}{\hat{\Theta}_{ass'}}\right), \]
+where $\Theta$ is the true probabilities of state transition from state $s$ to state $s'$ by taking action $a$, $\hat{\Theta}$ is the agent's estimation of $\Theta$ based on its experiences, and $N$ is the number of valid possible state transitions from $s$ to $s'$.
 
 \subsection{Information Gain/Missing Information}
 PIG calculates the amount of information that would be gained when taking a specific action by averaging the amount of information that each state transition would give multiplied by the chance of achieving that state transition. The equation is as follows:
 
-\[ PIG(a,s) := E_{s^{*},\Theta|\vec{d}} [I_{G}(a,s,s^{*})] = \sum_{s*} \hat{\Theta}_{ass^{*}}D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot}) \]
-Where $s^{*}$ is a valid resulting state due to taking action $a$ in state $s$ and $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is the updated model of $\hat{\Theta}_{as\cdot}$ if a transition from $s$ to $s^{*}$ was observed.
+\[ PIG(a,s) := E_{s^{*},\Theta|\vec{d}} \left[I_{G}(a,s,s^{*})\right] = \sum_{s*} \hat{\Theta}_{ass^{*}}D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot}), \]
+where $s^{*}$ is a valid resulting state due to taking action $a$ in state $s$ and $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is the updated model of $\hat{\Theta}_{as\cdot}$ if a transition from $s$ to $s^{*}$ was observed.
 
 Intuitively, $D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot})$ is a measure of how different our new model would be compared to our current model if we successfully transitioned from $s$ to $s^{*}$. The PIG algorithm takes this measure for every state $s^{*}$ it could end up in, then averages them to find out how valuable that action is in total. Pig then uses those values to pick the action $a$ that would teach it the most about its environment.
 
@@ -255,7 +253,7 @@ As such, I suggest changing the PIG algorithm to make it more robust to the Nois
 %Include methods for testing to determine Thesis statement validity.
 To determine the validity of the TPIG method, a grid-world simulation (described below) will be created. The original PIG algorithm, the TPIG algorithm, and a random action baseline will be tested on the simulation and their results compared. $\epsilon$-greedy versions of the PIG and TPIG algorithms will also be tested.
 
-The full project will be available on GitHub.\cite{TPIG:github} This repository will include the simulations used in this paper along with the data gathered and a final copy of this document.
+The full project will be available on GitHub \cite{TPIG:github}. This repository will include the simulations used in this paper along with the data gathered and a final copy of this document.
 
 \subsection{Metrics}
 The metrics for comparison will be the learning rate (How fast the algorithms approach an optimal solution), the distraction rate (How many times the agent views the Noisy TV), and the internal model accuracy (The KL-divergence between the true model and the agent's model after a given amount of time). These measurements will be taken every time-step and recorded. Their results will then be graphed and compared to each other.
@@ -283,7 +281,7 @@ Multiple simulations will be used for testing. Each simulation will have a diffe
 \section{Simulation}
 The simulations are a grid world. Agents can move in any of the four cardinal directions. If an agent walks into a wall, it does not change states. Every simulation is stored in a file for later access and use.
 \subsection{Diagrams}
-Three simulations were used to test the agent and its policies. Each policy was tested on all three simulations. These simulations are shown in \figurename~\ref{Fig:Sim}. The first of these is a 4x4 and has multiple Noisy-TV's. The second is a 5x5 with a single Noisy-TV. The final simulation is a 6x6 without any Noisy-TV's. The no-TV simulation serves as a control for how policies act without any distractions.
+Three simulations were used to test the agent and its policies. Each policy was tested on all three simulations. These simulations are shown in \figurename~\ref{Fig:Sim}. The first of these is a $4\times4$ and has multiple Noisy-TV's. The second is a $5\times5$ with a single Noisy-TV. The final simulation is a $6\times6$ without any Noisy-TV's. The no-TV simulation serves as a control for how policies act without any distractions.
 
 In this paper, all simulations started in position 5. In the 4-TV simulation, this is the second column, second row. In the 1-TV simulation, this is the first column, second row. in the No-TV simulation, this is the 5th column, second row.
 \subsection{Implementation}
@@ -296,7 +294,7 @@ Due to the complications of data storage, the current simulation stores all tran
 A more technically accurate representation would have each Noisy-TV state transition be stored relative to the noise of the state that the agent moved from. Essentially having each state transition with a noisy state be stored in its own portion of the (s,a) indexed array. However, since the noise has no effect on the actual transitions of the simulation, storing it in this way is impractical and confusing.
 
 \section{Policies}
-Policies define how the agent selects an action to take based on its internal model. The variable $\pi$ is used to denote the policy. In mathematical terms: $\pi(a | s)$
+Policies define how the agent selects an action to take based on its internal model. The variable $\pi$ is used to denote the policy. In mathematical terms the policy is $\pi(a | s)$.
 \subsection{Implementation}
 Every policy has functions to select actions and update their internal model. The policy selects an action $a$ based on its current state $s$. This action $a$ is then passed to the simulation which returns the new state $s'$ that the agent transitions to. This set of $(s,a,s')$ defines a unique state transition.
 
@@ -308,19 +306,19 @@ The Random Walk algorithm always chooses a random action. Each action has an equ
 The PIG algorithm calculates the predicted information gain of every action it could take based on its model, then selects the action with the largest potential gain. It does this by using the Kullback-Leibler divergence to estimate how much information remains to be gathered from each $(s,a)$ pair. The action from the $(s,a)$ pair with the highest value is then chosen.
 
 The Kullback-Leibler divergence is defined as follows:
-\[D_{KL} (\Theta_{sa\cdot} || \hat{\Theta}_{sa\cdot}) := \sum_{s' = 1}^{ N} \Theta_{sas'} \log_{2}(\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}})   \]
-Where $\Theta_{sa\cdot}$ is the true transition probabilities when starting in state $s$ and taking action $a$ and $\hat{\Theta}_{sa\cdot}$ is the agent's estimated transition probabilities when starting in state $s$ and taking action $a$  based on the transitions they have observed and stored. Similarly, $\Theta_{sas'}$ is the true transition probability of a transition from state $s$ to state $s'$ when taking action $a$ and $\hat{\Theta}_{sas'}$ is the agent's estimated transition probability from state $s$ to state $s'$ when taking action $a$ based on the transitions they have observed and stored.
+\[D_{KL} (\Theta_{sa\cdot} || \hat{\Theta}_{sa\cdot}) := \sum_{s' = 1}^{ N} \Theta_{sas'} \log_{2}\left(\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}}\right),   \]
+where $\Theta_{sa\cdot}$ is the true transition probabilities when starting in state $s$ and taking action $a$ and $\hat{\Theta}_{sa\cdot}$ is the agent's estimated transition probabilities when starting in state $s$ and taking action $a$  based on the transitions they have observed and stored. Similarly, $\Theta_{sas'}$ is the true transition probability of a transition from state $s$ to state $s'$ when taking action $a$ and $\hat{\Theta}_{sas'}$ is the agent's estimated transition probability from state $s$ to state $s'$ when taking action $a$ based on the transitions they have observed and stored.
 
 The Kullback-Leibler divergence is often used in information theory to estimate the information difference from one model to another. In the PIG algorithm, the Kullback-Leibler divergence is used to estimate the potential information that could be gained from taking a specific action.
 This is done through the following equation:
-\[ PIG(a,s) := \sum_{s*} \hat{\Theta}_{ass^{*}}D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot}) \]
-Where $s^{*}$ is a potential future state that could be transitioned to and $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is the observed transition probabilities from state $s$ when taking action $a$ after a transition $(s,a,s^{*})$ has been observed and used to update the internal transition probabilities in the model.
+\[ PIG(a,s) := \sum_{s*} \hat{\Theta}_{ass^{*}}D_{KL}(\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}} || \hat{\Theta}_{as\cdot}), \]
+where $s^{*}$ is a potential future state that could be transitioned to and $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is the observed transition probabilities from state $s$ when taking action $a$ after a transition $(s,a,s^{*})$ has been observed and used to update the internal transition probabilities in the model.
 
 In an ideal scenario, the true transition probabilities $\Theta_{as\cdot}$ would be used instead of $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ for this calculation. However, since the agent does not have access to the true transition probabilities, $\hat{\Theta}_{as\cdot}^{a,s \rightarrow s^{*}}$ is used as an estimate to allow the agent to learn. There is no oracle in this study, however if an oracle did exist, the true transition probabilities could be used instead to potentially great effect.
 
 Conceptually, the agent's estimate $\hat{\Theta}$ will approach the true distribution $\Theta$ as the agent gathers more data. As the gathered data approaches infinity, the agent's estimate $\hat{\Theta}$ will approach the true distribution $\Theta$. In mathematical terms:
 
-\[ \lim_{d \rightarrow \infty} D_{KL}( \Theta_{as\cdot} || \hat{\Theta}_{as\cdot}) = \lim_{d \rightarrow \infty} \sum_{s' = 1}^{ N} \Theta_{sas'} \log_{2}(\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}}) = 0\]
+\[ \lim_{d \rightarrow \infty} D_{KL}( \Theta_{as\cdot} || \hat{\Theta}_{as\cdot}) = \lim_{d \rightarrow \infty} \sum_{s' = 1}^{ N} \Theta_{sas'} \log_{2}\left(\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}}\right) = 0. \]
 This can be clearly seen, as $\frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}}$ approaches 1 as more data is gathered and the $\lim_{x \rightarrow 1} \log_{2}(x)$ is 0.
 
 The Kullback-Leibler divergence and (consequently) PIG algorithm do have some inherent limitations that needed to be handled in physical implementation. In the following sections, these limitations and my methods of resolving them are discussed in depth.
@@ -347,19 +345,19 @@ The EPIG algorithm is exactly the same as the PIG algorithm, except that it foll
 \subsection{Temporal Predicted Information Gain (TPIG)}
 The TPIG algorithm uses the Kullback-Leibler Divergence to calculate how much information is in a given $(s,a)$ pair. After observing a state transition $(s,a,s')$ it calculates the amount of information there is remaining to be learned both before and after the transition is used to update its internal model. TPIG then takes the difference between the two calculations. This difference is used as a reward to determine future actions. The reward function is as follows:
 \begin{equation}
-	Reward(s,a,s') := D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t-1} || \hat{\Theta}_{as\cdot}^{t-1}) - D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t} || \hat{\Theta}_{as\cdot}^{t})
+	Reward(s,a,s') := D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t-1} || \hat{\Theta}_{as\cdot}^{t-1}) - D_{KL}(\hat{\Theta}_{a,s \rightarrow s'}^{t} || \hat{\Theta}_{as\cdot}^{t}),
 \label{eq:TPIGReward}
 \end{equation}
-Where $\hat{\Theta}_{as\cdot}^{t-1}$ is the transition probabilities given before the state transition has been updated and $\hat{\Theta}_{a,s \rightarrow s'}^{t-1}$ is the predicted transition probabilities if the $(s,a,s')$ transition was observed. After the $(s,a,s')$ transition has been used to update the model, $\hat{\Theta}_{as\cdot}^{t}$ is the new transition probabilities after the update. $\hat{\Theta}_{a,s \rightarrow s'}^{t}$ is the predicted transition probabilities if a second transition $(s,a,s')$ was observed.
+where $\hat{\Theta}_{as\cdot}^{t-1}$ is the transition probabilities given before the state transition has been updated and $\hat{\Theta}_{a,s \rightarrow s'}^{t-1}$ is the predicted transition probabilities if the $(s,a,s')$ transition was observed. After the $(s,a,s')$ transition has been used to update the model, $\hat{\Theta}_{as\cdot}^{t}$ is the new transition probabilities after the update. $\hat{\Theta}_{a,s \rightarrow s'}^{t}$ is the predicted transition probabilities if a second transition $(s,a,s')$ was observed.
 
 The reward is then used to update the internal values of the $(s,a)$ pairs. These internal values known as Q-values are used to determine the optimal action to take.
 The formula for updating the Q-values is a standard temporal difference equation \eqref{eq:TDQVF}. A simplified form of this equation is shown below:
-\[Q_{new} = Q_{old} + \alpha(Reward + \gamma Q_{new} - Q_{old})\]
-Where $Q_{old}$ is the Q-value of the best action in the current state $s$ and $Q_{new}$ is the Q-value of the best action to be taken from the new state $s'$. The learning rate $\alpha$ and discount factor $\gamma$ are both set to $0.9$. Q-values were initialized to 1.
+\[Q_{new} = Q_{old} + \alpha(Reward + \gamma Q_{new} - Q_{old}),\]
+where $Q_{old}$ is the Q-value of the best action in the current state $s$ and $Q_{new}$ is the Q-value of the best action to be taken from the new state $s'$. The learning rate $\alpha$ and discount factor $\gamma$ are both set to $0.9$. Q-values were initialized to 1.
 
 To determine which action to take, TPIG checks its internal model of Q-values. The action $a$ that has the highest Q-values for its current state $s$ is chosen. This is formalized in the following equation:
 
-\[ TPIG(s) = \argmax_a  Q(s,a)\]
+\[ TPIG(s) = \argmax_a  Q(s,a).\]
 
 \subsubsection{TPIG and Infinity}
 In the initial exploration for TPIG, the Kullback-Leibler divergence will return $\infty$. This is because there are no known transitions in $\hat{\Theta}_{sa\cdot}$. To prevent these results from breaking the algorithm, any infinities returned by the Kullback-Leibler divergence is replaced with a 0 when the Reward is calculated.
