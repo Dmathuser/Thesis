@@ -266,15 +266,17 @@ In every state the agent will have four actions, one for each direction the agen
 
 Multiple simulations will be used for testing. Each simulation will have a different number of Noisy-TV's. These simulations are shown in figure 
 \figurename~\ref{Fig:Sim} and discussed in more depth later in the paper.
-\begin{figure}
+\begin{sidewaysfigure}
 	\begin{center}
-		\includegraphics[scale=0.75]{"images/4-TV.pdf"}
-		\includegraphics[scale=0.75]{"images/1-TV.pdf"}
-		\includegraphics[scale=0.75]{"images/No-TV.pdf"}
+	  \includegraphics[scale=0.75]{"images/4-TV.pdf"}
+          \hspace{0.5in}
+	  \includegraphics[scale=0.75]{"images/1-TV.pdf"}
+          \hspace{0.5in}
+	  \includegraphics[scale=0.75]{"images/No-TV.pdf"}
 	\end{center}
 	\caption{Three example simulations. Each semi-circle is a Noisy-TV. Arrows are one way walls.}
 	\label{Fig:Sim}
-\end{figure}
+\end{sidewaysfigure}
 %True model and internal model for KL-divergence comparisons does not take Noisy-TV variable into account. This prevents exploding KL-divergences and represents how the Noisy TV has to effect on state transitions and is just noise.
 
 \chapter{Methods}
