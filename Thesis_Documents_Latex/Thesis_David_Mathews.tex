@@ -53,7 +53,7 @@
 %\end{comment}
 
 \doctype{thesis}
-\title{Temporal PIG: Improving PIG to Resist the Noisy-TV Problem}
+\title{Temporal PIG: Improving PIG to Resist the Noisy TV Problem}
 \author{David Mathews}
 \degree{Masters in Computer Science and Engineering}
 \defensedate{TBD}
@@ -105,12 +105,12 @@
 \preliminaries
 
 \begin{abstract}
-I present an improvement to the standard PIG algorithm to make it less prone to the Noisy-TV problem and call it TPIG. (Temporal Predicted Information Gain) This improvement uses temporal difference learning over the information gain to avoid distraction and promote learning. I test TPIG on its rate of distraction, learning rate, and model accuracy over three different simulations. From the results, TPIG was found to be more effective than PIG in all three testing categories over all three simulations. TPIG shows great promise and further work should be done to expand on this field of research.
+I present an improvement to the standard PIG algorithm to make it less prone to the Noisy TV problem and call it TPIG. (Temporal Predicted Information Gain) This improvement uses temporal difference learning over the information gain to avoid distraction and promote learning. I test TPIG on its rate of distraction, learning rate, and model accuracy over three different simulations. From the results, TPIG was found to be more effective than PIG in all three testing categories over all three simulations. TPIG shows great promise and further work should be done to expand on this field of research.
 \end{abstract}
 
 %% Uncomment the following if you want acknowledgements
 \begin{acknowledgments}
-  I would like to thank my advisor, Dr.\ Larry D.\ Pyeatt, for all of the support and advice he has given me. Without his aid, this thesis would not be here today. I would also like to thank my brother Jonathan Mathews, for listening to my struggles and telling me how to make all my graphs better.
+  I would like to thank my advisor, Dr.\ Larry D.\ Pyeatt, for all of the support and advice he has given me. Without his aid, this thesis would not be here today. I would also like to thank my brother, Jonathan Mathews, for listening to my struggles and telling me how to make all my graphs better.
 \end{acknowledgments}
 
 
@@ -262,9 +262,9 @@ The metrics for comparison will be the learning rate (how fast the algorithms ap
 \subsection{Simulation}
 The simulation will be a grid-world. The simulation will declare which state the agent will start in. There is no goal state; instead, each episode will run for a given number of time steps before terminating.
 
-In every state the agent will have four actions, one for each direction the agent can travel. Moving into a wall will return the agent to its current state. One of the states will have a Noisy TV that is activated when the agent moves into the TV. Activating the Noisy TV will randomize the Noisy-TV variable in the state space.
+In every state the agent will have four actions, one for each direction the agent can travel. Moving into a wall will return the agent to its current state. One of the states will have a Noisy TV that is activated when the agent moves into the TV. Activating the Noisy TV will randomize the Noisy TV variable in the state space.
 
-Multiple simulations will be used for testing. Each simulation will have a different number of Noisy-TV's. These simulations are shown in figure 
+Multiple simulations will be used for testing. Each simulation will have a different number of Noisy TV's. These simulations are shown in figure 
 \figurename~\ref{Fig:Sim} and discussed in more depth later in the paper.
 \begin{sidewaysfigure}
 	\begin{center}
@@ -274,26 +274,26 @@ Multiple simulations will be used for testing. Each simulation will have a diffe
           \hspace{0.5in}
 	  \includegraphics[scale=0.75]{"images/No-TV.pdf"}
 	\end{center}
-	\caption{Three example simulations. Each semi-circle is a Noisy-TV. Arrows are one way walls.}
+	\caption{Three example simulations. Each semi-circle is a Noisy TV. Arrows are one way walls.}
 	\label{Fig:Sim}
 \end{sidewaysfigure}
-%True model and internal model for KL-divergence comparisons does not take Noisy-TV variable into account. This prevents exploding KL-divergences and represents how the Noisy TV has to effect on state transitions and is just noise.
+%True model and internal model for KL-divergence comparisons does not take Noisy TV variable into account. This prevents exploding KL-divergences and represents how the Noisy TV has to effect on state transitions and is just noise.
 
 \chapter{Methods}
 \section{Simulation}
 The simulations are a grid world. Agents can move in any of the four cardinal directions. If an agent walks into a wall, it does not change states. Every simulation is stored in a file for later access and use.
 \subsection{Diagrams}
-Three simulations were used to test the agent and its policies. Each policy was tested on all three simulations. These simulations are shown in \figurename~\ref{Fig:Sim}. The first of these simulations is a $4\times4$ and has multiple Noisy-TV's. The second is a $5\times5$ with a single Noisy-TV. The final simulation is a $6\times6$ without any Noisy-TV's. The no-TV simulation serves as a control for how policies act without any distractions.
+Three simulations were used to test the agent and its policies. Each policy was tested on all three simulations. These simulations are shown in \figurename~\ref{Fig:Sim}. The first of these simulations is a $4\times4$ and has multiple Noisy TV's. The second is a $5\times5$ with a single Noisy TV. The final simulation is a $6\times6$ without any Noisy TV's. The no-TV simulation serves as a control for how policies act without any distractions.
 
 In this paper, all simulations started in position 5. In the 4-TV simulation, this position is the second column, second row. In the 1-TV simulation, this position is the first column, second row. in the No-TV simulation, this position is the 5th column, second row.
 \subsection{Implementation}
 The simulation program is capable of reading in a simulation from a special ``.sim" file. The user can then forcefully change the agent's location or use the built in ``takeAction" function to move the agent according to the transition rules. The user can also print out simulations to a PDF file for easy viewing.
 
-The transition rules are defined inside the simulation class. By default, there is a 90\% chance of taking the desired action and a 10\% chance of staying in the same state instead. Moving into a wall has a 100\% chance of leaving the agent in the same state. Moving into a Noisy-TV is the same as moving into a wall, but the noise variable in the state is incremented, simulating how the Noisy-TV looks different every time the remote is used to flip the channel.
+The transition rules are defined inside the simulation class. By default, there is a 90\% chance of taking the desired action and a 10\% chance of staying in the same state instead. Moving into a wall has a 100\% chance of leaving the agent in the same state. Moving into a Noisy TV is the same as moving into a wall, but the noise variable in the state is incremented, simulating how the Noisy TV looks different every time the remote is used to flip the channel.
 
-Due to the complications of data storage, the current simulation stores all transitions as a two-dimensional vector that is indexed by a state-action pair. (s,a) pair. This data structure means that noise is not taken into account in the starting state when indexing observed state transitions. This issue is not significant since the only states with noise are the Noisy-TV states and all state comparisons using the Noisy-TV states are done using functions that take the noise into account. In addition, since the noise represents the ``channel" of the Noisy-TV this representation is accurate as all Noisy-TV states are technically ``In the same room". Future work could detach these states, potentially making this problem harder.
+Due to the complications of data storage, the current simulation stores all transitions as a two-dimensional vector that is indexed by a state-action pair. (s,a) pair. This data structure means that noise is not taken into account in the starting state when indexing observed state transitions. This issue is not significant since the only states with noise are the Noisy TV states and all state comparisons using the Noisy TV states are done using functions that take the noise into account. In addition, since the noise represents the ``channel" of the Noisy TV this representation is accurate as all Noisy TV states are technically ``In the same room". Future work could detach these states, potentially making this problem harder.
 
-A more technically accurate representation would have each Noisy-TV state transition be stored relative to the noise of the state that the agent moved from. Essentially having each state transition with a noisy state be stored in its own portion of the (s,a) indexed array. However, since the noise has no effect on the actual transitions of the simulation, storing it in this way is impractical and confusing.
+A more technically accurate representation would have each Noisy TV state transition be stored relative to the noise of the state that the agent moved from. Essentially having each state transition with a noisy state be stored in its own portion of the (s,a) indexed array. However, since the noise has no effect on the actual transitions of the simulation, storing it in this way is impractical and confusing.
 
 \section{Policies}
 Policies define how the agent selects an action to take based on its internal model. The variable $\pi$ is used to denote the policy. In mathematical terms the policy is $\pi(a | s)$.
@@ -342,7 +342,7 @@ This effect of the Kullback-Leibler divergence makes the PIG algorithm focus on 
 Intuitively, I have tricked the PIG algorithm into thinking it has observed a transition that does not exist. As such, the PIG algorithm will always think that there is more to learn about every state-action pair $(s,a)$ it has ever encountered. As a result, the probabilities of the two inputs of the Kullback-Leibler divergence function will never be the same, and the PIG algorithm will never stop exploring. Although this method does modify the original PIG algorithm, the PIG algorithm will still converge to a Kullback-Leibler divergence of 0. As such, I feel this change is justified.
 
 \subsection{Erratic Predicted Information Gain (EPIG)}
-The EPIG algorithm is exactly the same as the PIG algorithm, except that it follows an $\epsilon$-greedy model. Since EPIG is an $\epsilon$-greedy algorithm, whenever EPIG selects an action, it has an $\epsilon$\% chance to select a different action instead. Since EPIG occasionally takes a different action than the ``optimal'' one, it is capable of escaping from infinite loops such as the Noisy-TV. Except for the graphs specifically testing $\epsilon$, in this implementation, $\epsilon$ is set to 10\%.
+The EPIG algorithm is exactly the same as the PIG algorithm, except that it follows an $\epsilon$-greedy model. Since EPIG is an $\epsilon$-greedy algorithm, whenever EPIG selects an action, it has an $\epsilon$\% chance to select a different action instead. Since EPIG occasionally takes a different action than the ``optimal'' one, it is capable of escaping from infinite loops such as the Noisy TV. Except for the graphs specifically testing $\epsilon$, in this implementation, $\epsilon$ is set to 10\%.
 
 \subsection{Temporal Predicted Information Gain (TPIG)}
 The TPIG algorithm uses the Kullback-Leibler Divergence to calculate how much information is in a given $(s,a)$ pair. After observing a state transition $(s,a,s')$ it calculates the amount of information there is remaining to be learned both before and after the transition is used to update its internal model. TPIG then takes the difference between the two calculations. This difference is used as a reward to determine future actions. The reward function is as follows:
@@ -401,17 +401,17 @@ Each of the above policies were tested on all three simulations as shown in \fig
 \end{figure}
 
 \begin{itemize}[]
-	\item Distraction Rate: Total number of times algorithm used the Noisy-TV
+	\item Distraction Rate: Total number of times algorithm used the Noisy TV
 	\item Learning Rate: Number of unobserved state transitions in the simulation.
 	\item Model Accuracy: Accuracy of policy model with respect to the true model.
 \end{itemize}
 
 \section{Distraction Rate}
-\figurename~\ref{Fig:DRFP4TV}, \ref{Fig:DRFP1TV}, and \ref{Fig:DRFP0TV} are comparisons of the distraction rate of all five policies. Every time the agent activated the Noisy-TV, the distraction rate counter was increased by 1. As such, the fewer times a given algorithm is distracted by the Noisy-TV the better.
+\figurename~\ref{Fig:DRFP4TV}, \ref{Fig:DRFP1TV}, and \ref{Fig:DRFP0TV} are comparisons of the distraction rate of all five policies. Every time the agent activated the Noisy TV, the distraction rate counter was increased by 1. As such, the fewer times a given algorithm is distracted by the Noisy TV the better.
 
-In all three simulations, the baseline Random Walk algorithm was distracted the least. In the simulations with Noisy-TV's, the PIG algorithm was distracted heavily by the Noisy-TV. The TPIG algorithm, in comparison, was initially distracted but quickly learned to ignore or avoid the distraction.
+In all three simulations, the baseline Random Walk algorithm was distracted the least. In the simulations with Noisy TV's, the PIG algorithm was distracted heavily by the Noisy TV. The TPIG algorithm, in comparison, was initially distracted but quickly learned to ignore or avoid the distraction.
 
-In the 1-TV simulation, (\figurename~\ref{Fig:DRFP1TV}) the TPIG algorithm approached Random Walk in how effectively it ignored the Noisy-TV. In the 4-TV simulation, (\figurename~\ref{Fig:DRFP4TV}) however, TPIG does not approach Random Walk's effectiveness, but does perform much better than PIG does. In the simulation without any Noisy-TV's, (\figurename~\ref{Fig:DRFP0TV}) all algorithms performed equally well on this metric, since there were no distractions.
+In the 1-TV simulation, (\figurename~\ref{Fig:DRFP1TV}) the TPIG algorithm approached Random Walk in how effectively it ignored the Noisy TV. In the 4-TV simulation, (\figurename~\ref{Fig:DRFP4TV}) however, TPIG does not approach Random Walk's effectiveness, but does perform much better than PIG does. In the simulation without any Noisy TV's, (\figurename~\ref{Fig:DRFP0TV}) all algorithms performed equally well on this metric, since there were no distractions.
 
 
 Both PIG and TPIG were improved with the adding of an $\epsilon$-greedy component. These results are expected, as adding an $\epsilon$ chance to randomly move allows the algorithm to ``free" itself from distracting loops.
@@ -492,7 +492,7 @@ For the 4-TV simulation, (\figurename~\ref{Fig:MAFP4TV}) PIG performed worse tha
 
 In contrast, the TPIG algorithm had a better model accuracy than both the PIG and Random Walk algorithms for all time-steps. These results are particularly notable since the TPIG algorithm surpassed both the PIG and Random Walk algorithm in terms of states found. These results mean that TPIG had a better Model Accuracy than both PIG and Random Walk while also having explored faster.
 
-The $\epsilon$-greedy implementations performed equally well to the base algorithms for large amounts of time. There was a small increase in performance for EPIG over PIG, but ETPIG had no notable improvement over TPIG for large values of time. In the case of the No-TV simulation, (\figurename~\ref{Fig:MAFP0TV}) the $\epsilon$-greedy implementations performed worse than the base algorithms. These results are expected, as the random nature of $\epsilon$ assists with avoiding Noisy states, but also distracts from regular exploration. When there are no Noisy-TV states, the random nature of $\epsilon$ is a detriment to exploration.
+The $\epsilon$-greedy implementations performed equally well to the base algorithms for large amounts of time. There was a small increase in performance for EPIG over PIG, but ETPIG had no notable improvement over TPIG for large values of time. In the case of the No-TV simulation, (\figurename~\ref{Fig:MAFP0TV}) the $\epsilon$-greedy implementations performed worse than the base algorithms. These results are expected, as the random nature of $\epsilon$ assists with avoiding Noisy states, but also distracts from regular exploration. When there are no Noisy TV states, the random nature of $\epsilon$ is a detriment to exploration.
 
 
 
@@ -530,15 +530,15 @@ The effect of different values for $\epsilon$ is shown in the following set of g
 
 
 \subsection{Distraction Rate}
-In the 4-TV simulation, (\figurename~\ref{Fig:DREC4TV}) The distraction rate decreases as $\epsilon$ increases. This fact is true in both EPIG and ETPIG. In EPIG, (\figurename~\ref{Fig:DRECEP4TV}) as $\epsilon$ increases towards 100\% not only does the rate of distraction decrease but the frequency of distraction decreases as well. These results are expected behavior, as the more random the algorithm is, the less often it should tend towards its biases, in this case the Noisy-TV.
+In the 4-TV simulation, (\figurename~\ref{Fig:DREC4TV}) The distraction rate decreases as $\epsilon$ increases. This fact is true in both EPIG and ETPIG. In EPIG, (\figurename~\ref{Fig:DRECEP4TV}) as $\epsilon$ increases towards 100\% not only does the rate of distraction decrease but the frequency of distraction decreases as well. These results are expected behavior, as the more random the algorithm is, the less often it should tend towards its biases, in this case the Noisy TV.
 
 In ETPIG, (\figurename~\ref{Fig:DRECET4TV}) the initial rate of distraction is affected by the value of $\epsilon$, but the frequency of distraction is unaffected (or affected much less). There are some weird artifacts in the case of $\epsilon = 0$, also known as the TPIG case. These artifacts suggest that adding some randomness to the TPIG algorithm smooths out some irregular behavior.
 
 In the 1-TV simulation, (\figurename~\ref{Fig:DREC1TV}) the distraction rate decreases as $\epsilon$ increases. These results are true for both EPIG and ETPIG. The results for EPIG (\figurename~\ref{Fig:DRECEP1TV}) in the 1-TV simulation are very similar to the 4-TV simulation results. Both the distraction rate and frequency of distraction decrease as $\epsilon$ increases.
 
-In ETPIG, (\figurename~\ref{Fig:DRECET1TV}) however, the results are slightly different for the 1-TV simulation compared to the 4-TV simulation. Unlike the 4-TV simulation, in the 1-TV simulation, the distraction rate and frequency for the ETPIG algorithm approach towards the Random Walk algorithm ($\epsilon = 100$). This approach is very interesting, as it suggests that the ETPIG algorithm has figured out the Noisy-TV's and is now avoiding them, performing better than the Random Walk baseline. Around time-step 100, there is a point when all the ETPIG policies pivot. This pivot suggests that ETPIG may perform worse for smaller amounts of time when it has a low value of $\epsilon$. There are still weird artifacts in the case of $\epsilon = 0$, with TPIG performing much worse initially than its ETPIG counterpart. Similarly, TPIG does not appear to converge to the Random Walk algorithm, unlike its $\epsilon$-greedy counterpart ETPIG. Whether this situation is true for large time-steps or not cannot be determined without longer simulations. 
+In ETPIG, (\figurename~\ref{Fig:DRECET1TV}) however, the results are slightly different for the 1-TV simulation compared to the 4-TV simulation. Unlike the 4-TV simulation, in the 1-TV simulation, the distraction rate and frequency for the ETPIG algorithm approach towards the Random Walk algorithm ($\epsilon = 100$). This approach is very interesting, as it suggests that the ETPIG algorithm has figured out the Noisy TV's and is now avoiding them, performing better than the Random Walk baseline. Around time-step 100, there is a point when all the ETPIG policies pivot. This pivot suggests that ETPIG may perform worse for smaller amounts of time when it has a low value of $\epsilon$. There are still weird artifacts in the case of $\epsilon = 0$, with TPIG performing much worse initially than its ETPIG counterpart. Similarly, TPIG does not appear to converge to the Random Walk algorithm, unlike its $\epsilon$-greedy counterpart ETPIG. Whether this situation is true for large time-steps or not cannot be determined without longer simulations. 
 
-In the No-TV simulation, (\figurename~\ref{Fig:DREC0TV}) there is no Noisy-TV to distract any of the algorithms. As such, all the algorithms perform equally well on this metric and are never distracted. This lack of distraction makes the graph a flat line.
+In the No-TV simulation, (\figurename~\ref{Fig:DREC0TV}) there is no Noisy TV to distract any of the algorithms. As such, all the algorithms perform equally well on this metric and are never distracted. This lack of distraction makes the graph a flat line.
 \begin{figure}
 	\begin{center}
 		\subfloat[4-TV EPIG Simulation \label{Fig:EMECEP4TV}]{\includegraphics[scale=0.8]{"images/Epsilon_Missed_States_EPIG_4-TV.pdf"}}\hfill
@@ -634,7 +634,7 @@ In ETPIG, (\figurename~\ref{Fig:EAECET0TV}) on the other hand, lower values of $
 
 
 \chapter{Conclusions}
-The TPIG algorithm performed better than the PIG algorithm in all three metrics. TPIG was distracted by the Noisy-TV less than PIG. TPIG was able to explore and find new states faster than PIG was. TPIG was able to model the true distribution $\Theta$ more closely than PIG. For short simulations, PIG may explore faster than TPIG, but TPIG approaches a complete exploration faster than PIG does.
+The TPIG algorithm performed better than the PIG algorithm in all three metrics. TPIG was distracted by the Noisy TV less than PIG. TPIG was able to explore and find new states faster than PIG was. TPIG was able to model the true distribution $\Theta$ more closely than PIG. For short simulations, PIG may explore faster than TPIG, but TPIG approaches a complete exploration faster than PIG does.
 \section{Future Work}
 There is definitely more potential in this area of research. Information theory has already been utilized in reinforcement learning, but directly learning based on the measurement of information found in the environment has great potential. 
 
@@ -646,7 +646,7 @@ Some areas of future research include:
 	\item Further variety in simulations and more in-depth analysis of how simulation size affects TPIG.
 	\item Expanding the starting state to a set of starting states, or use of multiple similar simulations could be used to test knowledge transfer to similar tasks.
 	\item Expanding current formulae to work with continuous environments.
-	\item Comparing TPIG with other reinforcement learning algorithms in both environments with and without Noisy-TV's
+	\item Comparing TPIG with other reinforcement learning algorithms in both environments with and without Noisy TV's
 	\item Adapting TPIG to work with both external and internal reward.
 \end{itemize}
 
