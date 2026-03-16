@@ -6,14 +6,14 @@
 EPIG_alg::EPIG_alg(int seed, int numStates, int numActions):Policy(numStates,numActions)
 {
 	this->seed = seed;
-	srand(seed); //Might be slow...
+	rand_seed = seed; //Might be slow...
 	//Initialize();
 }
 
 EPIG_alg::EPIG_alg(int seed, int Epsilon, int numStates, int numActions):Policy(numStates,numActions)
 {
 	this->seed = seed;
-	srand(seed); //Might be slow...
+	rand_seed = seed; //Might be slow...
 	EPSILON = Epsilon;
 	//Initialize();
 }
@@ -37,14 +37,14 @@ void EPIG_alg::Initialize()
 
 Action EPIG_alg::getAction(State s)
 {
-	int randNum = rand()%ACTION_SIZE;
+	int randNum = rand_r(&rand_seed)%ACTION_SIZE;
 	Action a = Action(randNum);
 	double maxReturn = 0;
 	double test = 0;
 
-	int random = rand()%100;
+	int random = rand_r(&rand_seed)%100;
 	if (random < EPSILON)
-		return Action(rand()%ACTION_SIZE);
+		return Action(rand_r(&rand_seed)%ACTION_SIZE);
 	//Loop over possible actions
 	for (int i = 0; i < ACTION_SIZE; i++)
 	{
@@ -61,11 +61,11 @@ Action EPIG_alg::getAction(State s)
 	}
 	//Have an Epsilon % chance of picking a random non-optimal action.
 	/*
-	randNum = rand()%100;
+	randNum = rand_r(&rand_seed)%100;
 	if (randNum < EPSILON)
 	{
 		//Get a random offset for the action. 
-		randNum = rand()%(ACTION_SIZE-1);
+		randNum = rand_r(&rand_seed)%(ACTION_SIZE-1);
 		//Pick a different action randomly based on the offset
 		randNum = (randNum+int(a)) % ACTION_SIZE;
 		a = Action(randNum);

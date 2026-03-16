@@ -6,6 +6,7 @@ class TPIG_alg : public Policy {
 	// StateTransitionVector **transitionCount[numStates][ACTION_SIZE][???]; // IS THETA_HAT
 	private:
 	int seed = 0;
+	unsigned int rand_seed = 0;
 	double alpha = 0.9;
 	double gamma = 0.9;
 	double **Qvalues; //Q(s,a) values for action predictions.
@@ -23,6 +24,7 @@ class TPIG_alg : public Policy {
 	public:
 	TPIG_alg(int seed, int numStates, int numActions);
 	~TPIG_alg();
+	void setParams(double a, double g) { alpha = a; gamma = g; }
 	Action getAction(State s);
 	void Update(StateTransition sas);
 	void PrintTransitionVectors(State s, Action a);

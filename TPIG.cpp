@@ -6,7 +6,7 @@
 TPIG_alg::TPIG_alg(int seed, int numStates, int numActions):Policy(numStates, numActions)
 {
 	this->seed = seed;
-	srand(seed);
+	rand_seed = seed;
 	Initialize();
 }
 
@@ -40,7 +40,7 @@ void TPIG_alg::Initialize()
 
 Action TPIG_alg::getAction(State s)
 {
-	int randNum = rand()%ACTION_SIZE;
+	int randNum = rand_r(&rand_seed)%ACTION_SIZE;
 	Action a = Action(randNum);
 	double maxReturn = -1;
 	double test = -1;

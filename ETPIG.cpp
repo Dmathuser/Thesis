@@ -6,7 +6,7 @@
 ETPIG_alg::ETPIG_alg(int seed, int Epsilon, int numStates, int numActions):Policy(numStates, numActions)
 {
 	this->seed = seed;
-	srand(seed);
+	rand_seed = seed;
 	EPSILON = Epsilon;
 	Initialize();
 }
@@ -41,14 +41,14 @@ void ETPIG_alg::Initialize()
 
 Action ETPIG_alg::getAction(State s)
 {
-	int randNum = rand()%ACTION_SIZE;
+	int randNum = rand_r(&rand_seed)%ACTION_SIZE;
 	Action a = Action(randNum);
 	double maxReturn = -1;
 	double test = -1;
 	//Epsilon Greedy
-	int random = rand()%100;
+	int random = rand_r(&rand_seed)%100;
 	if (random < EPSILON)
-		return Action(rand()%ACTION_SIZE);
+		return Action(rand_r(&rand_seed)%ACTION_SIZE);
 	//Loop over future s' states
 	for (int i=0; i < ACTION_SIZE; i++)
 	{
@@ -62,11 +62,11 @@ Action ETPIG_alg::getAction(State s)
 	}
 	//Have an Epsilon % chance of picking a random non-optimal action.
 	/*
-	randNum = rand()%100;
+	randNum = rand_r(&rand_seed)%100;
 	if (randNum < EPSILON)
 	{
 		//Get a random offset for the action. 
-		//randNum = rand()%(ACTION_SIZE-1);
+		//randNum = rand_r(&rand_seed)%(ACTION_SIZE-1);
 		randNum = rand() % ACTION_SIZE;
 		//Pick a different action randomly based on the offset
 		//randNum = (randNum+int(a)) % ACTION_SIZE;

@@ -6,7 +6,7 @@
 PIG_alg::PIG_alg(int seed, int numStates, int numActions):Policy(numStates,numActions)
 {
 	this->seed = seed;
-	srand(seed); //Might be slow...
+	rand_seed = seed; //Might be slow...
 	//Initialize(); //Currently handled in policy class
 }
 
@@ -29,7 +29,7 @@ void PIG_alg::Initialize()
 
 Action PIG_alg::getAction(State s)
 {
-	int randNum = rand()%ACTION_SIZE;
+	int randNum = rand_r(&rand_seed)%ACTION_SIZE;
 	Action a = Action(randNum);
 	double maxReturn = 0;
 	double test = 0;

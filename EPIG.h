@@ -6,6 +6,7 @@ class EPIG_alg : public Policy {
 	private:
 	// State transitionCount[numStates][ACTION_SIZE][???]; // IS THETA_HAT
 	int seed = 0;
+	unsigned int rand_seed = 0;
 	bool DEBUG = false;
 	int EPSILON = 5;
 	double KL_D(StateTransitionVector* Theta, StateTransitionVector* ThetaHat);

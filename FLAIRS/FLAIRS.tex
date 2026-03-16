@@ -1,0 +1,1777 @@
+%File: FLAIRS.tex
+\documentclass[letterpaper]{article}
+\usepackage{flairs}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{xcolor}
+\frenchspacing
+\setlength{\pdfpagewidth}{8.5in}
+\setlength{\pdfpageheight}{11in}
+\clubpenalty=10000
+\widowpenalty=10000
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\pdfinfo{
+/Title (Temporal PIG: A Predict-Then-Verify Approach to Resisting the Noisy-TV Problem)
+/Author (David Mathews, Larry D. Pyeatt)
+/Keywords (reinforcement learning, intrinsic motivation, exploration, noisy-TV problem, information gain)
+}
+
+\setcounter{secnumdepth}{0}
+
+\title{Temporal PIG: A Predict-Then-Verify Approach\\to Resisting the Noisy-TV Problem}
+\author{David Mathews \and Larry D. Pyeatt\\
+Department of Electrical Engineering and Computer Science\\
+South Dakota School of Mines and Technology\\
+Rapid City, SD 57701\\
+\{David.Mathews, Larry.Pyeatt\}@sdsmt.edu
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\begin{quote}
+Many curiosity-driven exploration methods in reinforcement learning
+are fundamentally open-loop: they reward predictions of learning
+without verifying that learning occurred.  This makes them vulnerable
+to the Noisy-TV problem, where stochastic stimuli trap agents into
+endlessly seeking novelty from non-informative distractors.  We
+propose a \emph{predict-then-verify} principle: reward only the
+measured decrease in model uncertainty after each transition.  We
+instantiate this as Temporal PIG (TPIG), a modification of Predicted
+Information Gain (PIG) that uses the actual change in KL-divergence
+as a temporal-difference reward.  Evaluated on grid-world environments
+with varying distractor density, TPIG dramatically outperforms PIG
+on distraction rate, exploration speed, and model accuracy,
+demonstrating that closed-loop verification of learning is the key to
+resisting stochastic distractors.
+\end{quote}
+\end{abstract}
+
+\section{Introduction}
+
+Reinforcement learning (RL) agents learn by taking actions in an
+environment and receiving rewards that guide future
+behavior~\cite{Sutton1998,Kaelbling1996RLsurvey}.  When environmental
+rewards are sparse or absent, agents must generate their own
+\emph{intrinsic} rewards to drive
+exploration~\cite{DBLP:journals/corr/abs-1908-06976,FToCFaIM:Jurgen,Oudeyer2007intrinsic}.
+Common intrinsic reward methods include count-based
+novelty~\cite{DBLP:journals/corr/TangHFSCDSTA16,Bellemare2016counting},
+prediction-error
+curiosity~\cite{Pathak2017ICM,Rein:VIME}, and information-theoretic
+approaches~\cite{10.3389/fncir.2013.00037}.
+
+A fundamental weakness of many intrinsic motivation methods is the
+\emph{Noisy-TV problem}~\cite{Burda2019curiosity}.
+Consider an environment containing a television with a remote control.
+Each button press displays a random, never-before-seen channel.
+Novelty-seeking agents become trapped, perpetually pressing the remote
+because each press yields a ``new'' state, even though no useful
+information about the environment is being learned.
+
+Predicted Information Gain
+(PIG)~\cite{10.3389/fncir.2013.00037} selects actions by estimating,
+via KL-divergence, how much each action would improve the agent's
+transition model.  Although PIG is more principled than raw
+novelty-seeking, it still falls prey to the Noisy-TV: the stochastic
+transitions from button presses yield high predicted divergence, luring
+the agent back to the distractor.
+
+The core issue is that PIG \emph{predicts} information gain but never
+\emph{confirms} that learning actually occurred.  We propose a
+\textbf{predict-then-verify} approach: compute the predicted
+information gain both before and after incorporating a new transition,
+and use the \emph{actual decrease} as a TD reward.  We instantiate
+this as Temporal PIG (TPIG) and show that it resists the Noisy TV
+because stochastic distractors produce large predictions but
+negligible measured improvement.
+
+\section{Related Work}
+
+\subsection{Intrinsic Motivation for Exploration}
+
+Intrinsic motivation methods address the sparse-reward problem by
+letting agents generate their own learning
+signals~\cite{DBLP:journals/corr/abs-1908-06976,FToCFaIM:Jurgen}.
+This idea has been realized in several families of algorithms.
+
+\emph{Count-based} methods reward visiting novel states by tracking
+visitation counts.  Bellemare et
+al.~\cite{Bellemare2016counting} introduced pseudo-counts to unify
+count-based exploration with intrinsic motivation in
+high-dimensional spaces, and Tang et
+al.~\cite{DBLP:journals/corr/TangHFSCDSTA16} extended this approach
+using hash functions.  However, count-based methods are directly
+vulnerable to the Noisy-TV problem: every channel change registers
+as a novel state, producing unbounded reward from a single
+distractor.
+
+\emph{Prediction-error} methods use the agent's inability to predict
+outcomes as a reward signal.  Pathak et
+al.~\cite{Pathak2017ICM} proposed the Intrinsic Curiosity Module
+(ICM), which trains a forward dynamics model and uses its prediction
+error as intrinsic reward.  Houthooft et
+al.~\cite{Rein:VIME} proposed VIME, which maximizes information gain
+about environment dynamics using Bayesian neural networks.  Burda et
+al.~\cite{Burda2019RND} introduced Random Network Distillation (RND),
+which measures novelty as the prediction error of a randomly
+initialized fixed network.  While these approaches are more robust
+than raw count-based methods, Burda et
+al.~\cite{Burda2019curiosity} demonstrated in a large-scale study
+that prediction-error agents can still be attracted to inherently
+unpredictable transitions such as those produced by a Noisy TV.
+
+\emph{Information-theoretic} methods, including PIG~\cite{10.3389/fncir.2013.00037},
+estimate the expected change in the agent's world model using
+information-theoretic quantities such as KL-divergence.  Little and
+Sommer~\shortcite{10.3389/fncir.2013.00037} showed that PIG-based
+exploration learns environment structure faster than reward-free
+baselines and transfers well to downstream goal-directed tasks.
+M\'{e}nard et al.~\cite{DBLP:journals/corr/abs-2007-13442}
+studied active learning for pure exploration in RL, providing
+theoretical analysis of sample-efficient exploration strategies.
+
+\subsection{The Noisy-TV Problem}
+
+The Noisy-TV problem was identified as a challenge for
+curiosity-driven agents by Burda et
+al.~\cite{Burda2019curiosity} and has since become a standard test
+of robustness for intrinsic motivation
+methods~\cite{DBLP:journals/corr/abs-2008-04388}.  Kovac et
+al.~\shortcite{DBLP:journals/corr/abs-2008-04388} proposed
+goal-sampling strategies based on learning progress to mitigate
+sensitivity to noise.  Ladosz et
+al.~\cite{Ladosz_2022} survey the broader exploration literature and
+note that most intrinsic motivation methods remain susceptible to
+stochastic distractors, identifying this as an open problem.
+
+TPIG can also be viewed as an instantiation of \emph{learning
+progress}~\cite{Oudeyer2007intrinsic}, which rewards reductions in
+prediction error over time.  TPIG operates directly on PIG's
+KL-divergence formulation without auxiliary networks, making it a
+minimal modification.  The same predict-then-verify principle could
+be applied with other divergence measures such as MSE.
+
+\section{Background}
+
+\subsection{Temporal Difference Learning}
+
+In temporal difference (TD) learning~\cite{Sutton1998}, the agent
+maintains Q-values $Q(s,a)$ for each state-action
+pair~\cite{Watkins1992Qlearning} and updates them after each
+transition $(s,a,s')$ using:
+\begin{equation}
+  Q(s,a) \leftarrow Q(s,a) + \alpha \left[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\right],
+  \label{eq:TDQVF}
+\end{equation}
+where $r$ is the reward, $\alpha$ is the learning rate, and $\gamma$
+is the discount factor~\cite{Sutton1998}.
+
+\subsection{Predicted Information Gain (PIG)}
+
+PIG uses the KL-divergence~\cite{Kullback1951information} to estimate
+how much an agent's transition model would change if it took a
+particular action.  Let
+$\hat{\Theta}_{sa\cdot}$ denote the agent's estimated transition
+probabilities from state $s$ under action $a$, and let
+$\hat{\Theta}_{sa\cdot}^{s \to s^*}$ denote the updated estimate
+after hypothetically observing a transition to $s^*$.  The predicted
+information gain is:
+\begin{equation}
+  \textrm{PIG}(s,a) := \sum_{s^*} \hat{\Theta}_{sas^*}\,
+  D_{\textrm{KL}}\!\left(\hat{\Theta}_{sa\cdot}^{s \to s^*}
+  \;\|\;\hat{\Theta}_{sa\cdot}\right),
+  \label{eq:PIG}
+\end{equation}
+where $D_{\textrm{KL}}$ is the KL-divergence.  PIG selects the action
+$a$ that maximizes this quantity.
+
+\subsection{The Noisy-TV Problem}
+
+When the environment contains a Noisy TV, the stochastic channel
+changes produce transitions to many distinct states, each with high
+predicted information gain.  PIG's action selection thus repeatedly
+favors the TV because the weighted average over all possible channel
+outcomes remains large, even though the transitions carry no useful
+structural information about the environment.
+
+\section{The Predict-Then-Verify Principle}
+
+TPIG modifies PIG by measuring the \emph{actual} information gained
+after each transition rather than relying on predictions alone.  After
+observing transition $(s,a,s')$, TPIG computes the predicted
+information gain both before and after updating the internal model:
+\begin{multline}
+  r_{\textrm{TPIG}}(s,a,s') :=
+  D_{\textrm{KL}}\!\bigl(\hat{\Theta}_{sa\cdot}^{s \to s',\,t-1}
+  \;\|\;\hat{\Theta}_{sa\cdot}^{t-1}\bigr) \\
+  - D_{\textrm{KL}}\!\bigl(\hat{\Theta}_{sa\cdot}^{s \to s',\,t}
+  \;\|\;\hat{\Theta}_{sa\cdot}^{t}\bigr),
+  \label{eq:TPIGReward}
+\end{multline}
+where superscripts $t{-}1$ and $t$ denote the model before and after
+incorporating the observed transition.  The first term is the
+predicted information gain \emph{before} the update; the second is the
+predicted gain \emph{after}.  If genuine learning occurred, the
+remaining information decreases and the reward is positive.
+
+Note that both KL-divergence evaluations reuse the same computation
+that PIG already performs, so TPIG adds only a single additional
+divergence calculation per time step.
+This reward is used to update Q-values via standard TD
+learning~\eqref{eq:TDQVF}, with $\alpha = 0.9$ and $\gamma = 0.9$.
+Q-values are initialized to 1, providing an optimistic prior that
+encourages exploration of all actions before learned rewards dominate.
+TPIG selects the action with the highest Q-value:
+\begin{equation}
+  \textrm{TPIG}(s) = \argmax_a Q(s,a).
+  \label{eq:TPIG}
+\end{equation}
+
+\begin{figure*}
+  \centering
+  \includegraphics[width=0.225\textwidth]{"images/4-TV.pdf"}\hfill
+  \includegraphics[width=0.225\textwidth]{"images/1-TV.pdf"}\hfill
+  \includegraphics[width=0.225\textwidth]{"images/No-TV.pdf"}
+  \caption{Grid-world simulations.  Semi-circles are Noisy TVs;
+    arrows indicate one-way walls.  Left: 4-TV ($4\times4$).
+    Center: 1-TV ($5\times5$).  Right: No-TV ($6\times6$).}
+  \label{Fig:Sim}
+\end{figure*}
+
+
+\subsection{The Closed-Minded Model Problem}
+
+A subtle issue arises in the PIG algorithm when a state-action pair
+has been observed only once.  After a single observation of transition
+$(s,a,s')$, the agent records the probability of that transition as
+100\%.  On subsequent visits to state $s$, PIG predicts that taking
+action $a$ will deterministically lead to $s'$, making the predicted
+and observed distributions identical.  The KL-divergence returns~0,
+and PIG considers the action fully learned, even if the true
+transition is stochastic with additional possible outcomes.
+
+This ``closed-minded'' behavior causes PIG to neglect areas it has
+visited only once, focusing instead on regions where it has already
+observed variance.  Both PIG and TPIG address this by initializing the total observed
+transition count for each state-action pair to~1 rather than~0.  This
+is equivalent to placing a uniform Dirichlet prior on the transition
+probabilities, ensuring that the estimated and predicted distributions
+are never identical, so the KL-divergence always indicates some
+remaining information to be gained.  As observations accumulate, the
+prior is overwhelmed by data and the model converges to the true
+distribution.
+
+\subsection{Handling Infinities}
+
+When $\hat{\Theta}_{sa\cdot}$ is empty (no transitions observed),
+the KL-divergence returns infinity.  These values are replaced with 0
+in the reward calculation.  Negative rewards (which can occur when
+discovering a new state temporarily increases uncertainty) are clamped
+to 0 to avoid penalizing exploration.  Similarly, any Q-values that
+are infinite are normalized to~0 before the TD update is applied.
+
+\subsection{Why TPIG Resists the Noisy TV}
+
+When the agent presses the TV remote, it transitions to a ``new''
+channel state.  PIG predicts high information gain because the model
+would change substantially.  However, after the update, TPIG
+recomputes the predicted gain and finds it is still high because the TV
+states are so numerous that each individual observation barely reduces
+the remaining uncertainty.  The resulting reward is near zero,
+and TPIG's Q-values for TV-related actions decay, redirecting the
+agent to parts of the environment where observations actually improve
+the model.  More precisely, for a purely stochastic transition with
+$k$ equally likely outcomes, the $n$-th observation reduces the
+predicted information gain by only $O(1/n)$, so the TPIG reward
+vanishes as observations accumulate.  Structured transitions, by
+contrast, produce larger reductions that persist until the model
+converges.  In summary, PIG takes the action it \emph{predicts} will
+teach it the most.  TPIG takes the action \emph{experienced} to yield
+the most actual learning, a crucial distinction that makes the
+predict-then-verify approach robust to stochastic distractors.
+
+\subsection{Epsilon-Greedy Variants}
+
+We also evaluate $\epsilon$-greedy versions of both algorithms:
+EPIG and ETPIG.  With probability $\epsilon$ (set to 10\% unless
+otherwise noted), the agent selects a random action instead of the
+greedy choice.
+
+\section{Experimental Setup}
+
+\subsection{Grid-World Simulations}
+
+We test on three grid-world environments of increasing size
+(\figurename~\ref{Fig:Sim}):
+\begin{itemize}
+  \item \textbf{4-TV} ($4 \times 4$): Multiple Noisy TVs.
+  \item \textbf{1-TV} ($5 \times 5$): A single Noisy TV.
+  \item \textbf{No-TV} ($6 \times 6$): No distractors (control).
+\end{itemize}
+
+In each environment, actions move the agent in one of four cardinal
+directions.  Movement succeeds with 90\% probability; with 10\%
+probability the agent remains in place.  Walking into a wall always
+leaves the agent stationary.  Activating a Noisy TV increments an unbounded noise variable in the
+state, so each activation produces a unique state, simulating a TV
+with an inexhaustible supply of channels.  The noise variable does
+not affect actual transition dynamics: all TV states share the same
+transition probabilities regardless of channel.  The noise is
+therefore a pure distractor that inflates the apparent state space
+without adding any learnable structure.
+
+All agents start in position~5.  Each episode runs for 1000 time
+steps with no goal state.  Every policy is run for 100 independent
+trials per simulation.  The source code and simulation data are publicly
+available~\cite{TPIG:github}.
+
+\subsection{Metrics}
+
+\begin{itemize}
+  \item \textbf{Distraction rate}: Cumulative Noisy-TV activations.
+  \item \textbf{Learning rate}: Number of undiscovered state
+    transitions remaining.
+  \item \textbf{Model accuracy}: KL-divergence between the agent's
+    model and the true transition probabilities (excluding
+    undiscovered transitions, which would contribute infinity).
+\end{itemize}
+
+\subsection{Policies Compared}
+
+Five policies are evaluated: Random Walk (uniform random baseline),
+PIG, EPIG ($\epsilon$-greedy PIG), TPIG, and ETPIG ($\epsilon$-greedy
+TPIG).
+
+\section{Results}
+
+\subsection{Distraction Rate}
+
+Figures~\ref{Fig:DR4TV} and~\ref{Fig:DR1TV} show
+cumulative distractions in the 4-TV and 1-TV environments.  The PIG algorithm is
+heavily distracted by the Noisy TVs, with its distraction count
+growing steadily throughout the simulation.  The Random Walk baseline,
+which selects actions uniformly at random, is distracted the least
+simply because it has no bias toward any particular action.
+
+TPIG is initially distracted at a rate comparable to PIG, as it has
+not yet accumulated enough experience to distinguish informative
+transitions from noise.  However, after a brief learning period, TPIG
+sharply reduces its rate of distraction.  In the 1-TV environment
+(\figurename~\ref{Fig:DR1TV}), TPIG's distraction rate approaches that
+of Random Walk, indicating that it has effectively learned to avoid
+the TV.  In the 4-TV environment (\figurename~\ref{Fig:DR4TV}), the
+improvement is less dramatic due to the higher density of distractors,
+but TPIG still substantially outperforms PIG.
+By the final time step, TPIG reduces cumulative distractions by 65\% relative to PIG in the 4-TV environment and by 88\% in the 1-TV environment.
+
+The $\epsilon$-greedy variants EPIG and ETPIG both show reduced
+distraction compared to their greedy counterparts, as the random
+action selection helps escape distraction loops.  In the No-TV control
+environment (not shown), all algorithms produce identical flat lines
+at zero since there are no distractors.
+
+\begin{figure}
+  \centering
+    % GNUPLOT: LaTeX picture with Postscript
+  \begingroup
+    \makeatletter
+    \providecommand\color[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package color not loaded in conjunction with
+        terminal option `colourtext'%
+      }{See the gnuplot documentation for explanation.%
+      }{Either use 'blacktext' in gnuplot or load the package
+        color.sty in LaTeX.}%
+      \renewcommand\color[2][]{}%
+    }%
+    \providecommand\includegraphics[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package graphicx or graphics not loaded%
+      }{See the gnuplot documentation for explanation.%
+      }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+      \renewcommand\includegraphics[2][]{}%
+    }%
+    \providecommand\rotatebox[2]{#2}%
+    \@ifundefined{ifGPcolor}{%
+      \newif\ifGPcolor
+      \GPcolortrue
+    }{}%
+    \@ifundefined{ifGPblacktext}{%
+      \newif\ifGPblacktext
+      \GPblacktexttrue
+    }{}%
+    % define a \g@addto@macro without @ in the name:
+    \let\gplgaddtomacro\g@addto@macro
+    % define empty templates for all commands taking text:
+    \gdef\gplbacktext{}%
+    \gdef\gplfronttext{}%
+    \makeatother
+    \ifGPblacktext
+      % no textcolor at all
+      \def\colorrgb#1{}%
+      \def\colorgray#1{}%
+    \else
+      % gray or color?
+      \ifGPcolor
+        \def\colorrgb#1{\color[rgb]{#1}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+        \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+        \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+        \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+        \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+        \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+        \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+        \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+        \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+      \else
+        % gray
+        \def\colorrgb#1{\color{black}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color{black}}%
+        \expandafter\def\csname LT1\endcsname{\color{black}}%
+        \expandafter\def\csname LT2\endcsname{\color{black}}%
+        \expandafter\def\csname LT3\endcsname{\color{black}}%
+        \expandafter\def\csname LT4\endcsname{\color{black}}%
+        \expandafter\def\csname LT5\endcsname{\color{black}}%
+        \expandafter\def\csname LT6\endcsname{\color{black}}%
+        \expandafter\def\csname LT7\endcsname{\color{black}}%
+        \expandafter\def\csname LT8\endcsname{\color{black}}%
+      \fi
+    \fi
+      \setlength{\unitlength}{0.0500bp}%
+      \ifx\gptboxheight\undefined%
+        \newlength{\gptboxheight}%
+        \newlength{\gptboxwidth}%
+        \newsavebox{\gptboxtext}%
+      \fi%
+      \setlength{\fboxrule}{0.5pt}%
+      \setlength{\fboxsep}{1pt}%
+      \definecolor{tbcol}{rgb}{1,1,1}%
+  \begin{picture}(4740.00,3600.00)%
+      \gplgaddtomacro\gplbacktext{%
+        \csname LTb\endcsname%%
+        \put(454,343){\makebox(0,0)[r]{\strut{}\scriptsize -50}}%
+        \csname LTb\endcsname%%
+        \put(454,666){\makebox(0,0)[r]{\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(454,990){\makebox(0,0)[r]{\strut{}\scriptsize 50}}%
+        \csname LTb\endcsname%%
+        \put(454,1314){\makebox(0,0)[r]{\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(454,1638){\makebox(0,0)[r]{\strut{}\scriptsize 150}}%
+        \csname LTb\endcsname%%
+        \put(454,1962){\makebox(0,0)[r]{\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(454,2286){\makebox(0,0)[r]{\strut{}\scriptsize 250}}%
+        \csname LTb\endcsname%%
+        \put(454,2610){\makebox(0,0)[r]{\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(454,2934){\makebox(0,0)[r]{\strut{}\scriptsize 350}}%
+        \csname LTb\endcsname%%
+        \put(454,3258){\makebox(0,0)[r]{\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(507,235){\makebox(0,0){\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(912,235){\makebox(0,0){\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(1318,235){\makebox(0,0){\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(1723,235){\makebox(0,0){\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(2128,235){\makebox(0,0){\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(2533,235){\makebox(0,0){\strut{}\scriptsize 500}}%
+        \csname LTb\endcsname%%
+        \put(2938,235){\makebox(0,0){\strut{}\scriptsize 600}}%
+        \csname LTb\endcsname%%
+        \put(3344,235){\makebox(0,0){\strut{}\scriptsize 700}}%
+        \csname LTb\endcsname%%
+        \put(3749,235){\makebox(0,0){\strut{}\scriptsize 800}}%
+        \csname LTb\endcsname%%
+        \put(4154,235){\makebox(0,0){\strut{}\scriptsize 900}}%
+        \csname LTb\endcsname%%
+        \put(4559,235){\makebox(0,0){\strut{}\scriptsize 1000}}%
+      }%
+      \gplgaddtomacro\gplfronttext{%
+        \csname LTb\endcsname%%
+        \put(4196,3153){\makebox(0,0)[r]{\strut{}\scriptsize Random Walk}}%
+        \csname LTb\endcsname%%
+        \put(4196,3028){\makebox(0,0)[r]{\strut{}\scriptsize PIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2903){\makebox(0,0)[r]{\strut{}\scriptsize EPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2778){\makebox(0,0)[r]{\strut{}\scriptsize TPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2653){\makebox(0,0)[r]{\strut{}\scriptsize ETPIG}}%
+        \csname LTb\endcsname%%
+        \put(93,1800){\rotatebox{-270.00}{\makebox(0,0){\strut{}\footnotesize Cumulative Distractions}}}%
+        \csname LTb\endcsname%%
+        \put(2533,75){\makebox(0,0){\strut{}\footnotesize TimeStep}}%
+        \csname LTb\endcsname%%
+        \put(2533,3419){\makebox(0,0){\strut{}\small Distraction Rate: 4-TV Simulation}}%
+      }%
+      \gplbacktext
+      \put(0,0){\includegraphics[width={237.00bp},height={180.00bp}]{gnuplot_figs/Distraction_Rate_4-TV}}%
+      \gplfronttext
+    \end{picture}%
+  \endgroup
+  \caption{Distraction rate: 4-TV simulation.  Shaded regions show $\pm 1$ standard deviation over 100 trials.}
+  \label{Fig:DR4TV}
+\end{figure}
+
+\begin{figure}
+  \centering
+    % GNUPLOT: LaTeX picture with Postscript
+  \begingroup
+    \makeatletter
+    \providecommand\color[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package color not loaded in conjunction with
+        terminal option `colourtext'%
+      }{See the gnuplot documentation for explanation.%
+      }{Either use 'blacktext' in gnuplot or load the package
+        color.sty in LaTeX.}%
+      \renewcommand\color[2][]{}%
+    }%
+    \providecommand\includegraphics[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package graphicx or graphics not loaded%
+      }{See the gnuplot documentation for explanation.%
+      }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+      \renewcommand\includegraphics[2][]{}%
+    }%
+    \providecommand\rotatebox[2]{#2}%
+    \@ifundefined{ifGPcolor}{%
+      \newif\ifGPcolor
+      \GPcolortrue
+    }{}%
+    \@ifundefined{ifGPblacktext}{%
+      \newif\ifGPblacktext
+      \GPblacktexttrue
+    }{}%
+    % define a \g@addto@macro without @ in the name:
+    \let\gplgaddtomacro\g@addto@macro
+    % define empty templates for all commands taking text:
+    \gdef\gplbacktext{}%
+    \gdef\gplfronttext{}%
+    \makeatother
+    \ifGPblacktext
+      % no textcolor at all
+      \def\colorrgb#1{}%
+      \def\colorgray#1{}%
+    \else
+      % gray or color?
+      \ifGPcolor
+        \def\colorrgb#1{\color[rgb]{#1}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+        \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+        \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+        \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+        \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+        \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+        \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+        \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+        \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+      \else
+        % gray
+        \def\colorrgb#1{\color{black}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color{black}}%
+        \expandafter\def\csname LT1\endcsname{\color{black}}%
+        \expandafter\def\csname LT2\endcsname{\color{black}}%
+        \expandafter\def\csname LT3\endcsname{\color{black}}%
+        \expandafter\def\csname LT4\endcsname{\color{black}}%
+        \expandafter\def\csname LT5\endcsname{\color{black}}%
+        \expandafter\def\csname LT6\endcsname{\color{black}}%
+        \expandafter\def\csname LT7\endcsname{\color{black}}%
+        \expandafter\def\csname LT8\endcsname{\color{black}}%
+      \fi
+    \fi
+      \setlength{\unitlength}{0.0500bp}%
+      \ifx\gptboxheight\undefined%
+        \newlength{\gptboxheight}%
+        \newlength{\gptboxwidth}%
+        \newsavebox{\gptboxtext}%
+      \fi%
+      \setlength{\fboxrule}{0.5pt}%
+      \setlength{\fboxsep}{1pt}%
+      \definecolor{tbcol}{rgb}{1,1,1}%
+  \begin{picture}(4740.00,3600.00)%
+      \gplgaddtomacro\gplbacktext{%
+        \csname LTb\endcsname%%
+        \put(454,343){\makebox(0,0)[r]{\strut{}\scriptsize -50}}%
+        \csname LTb\endcsname%%
+        \put(454,828){\makebox(0,0)[r]{\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(454,1314){\makebox(0,0)[r]{\strut{}\scriptsize 50}}%
+        \csname LTb\endcsname%%
+        \put(454,1800){\makebox(0,0)[r]{\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(454,2286){\makebox(0,0)[r]{\strut{}\scriptsize 150}}%
+        \csname LTb\endcsname%%
+        \put(454,2772){\makebox(0,0)[r]{\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(454,3258){\makebox(0,0)[r]{\strut{}\scriptsize 250}}%
+        \csname LTb\endcsname%%
+        \put(507,235){\makebox(0,0){\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(912,235){\makebox(0,0){\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(1318,235){\makebox(0,0){\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(1723,235){\makebox(0,0){\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(2128,235){\makebox(0,0){\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(2533,235){\makebox(0,0){\strut{}\scriptsize 500}}%
+        \csname LTb\endcsname%%
+        \put(2938,235){\makebox(0,0){\strut{}\scriptsize 600}}%
+        \csname LTb\endcsname%%
+        \put(3344,235){\makebox(0,0){\strut{}\scriptsize 700}}%
+        \csname LTb\endcsname%%
+        \put(3749,235){\makebox(0,0){\strut{}\scriptsize 800}}%
+        \csname LTb\endcsname%%
+        \put(4154,235){\makebox(0,0){\strut{}\scriptsize 900}}%
+        \csname LTb\endcsname%%
+        \put(4559,235){\makebox(0,0){\strut{}\scriptsize 1000}}%
+      }%
+      \gplgaddtomacro\gplfronttext{%
+        \csname LTb\endcsname%%
+        \put(4196,3153){\makebox(0,0)[r]{\strut{}\scriptsize Random Walk}}%
+        \csname LTb\endcsname%%
+        \put(4196,3028){\makebox(0,0)[r]{\strut{}\scriptsize PIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2903){\makebox(0,0)[r]{\strut{}\scriptsize EPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2778){\makebox(0,0)[r]{\strut{}\scriptsize TPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2653){\makebox(0,0)[r]{\strut{}\scriptsize ETPIG}}%
+        \csname LTb\endcsname%%
+        \put(93,1800){\rotatebox{-270.00}{\makebox(0,0){\strut{}\footnotesize Cumulative Distractions}}}%
+        \csname LTb\endcsname%%
+        \put(2533,75){\makebox(0,0){\strut{}\footnotesize TimeStep}}%
+        \csname LTb\endcsname%%
+        \put(2533,3419){\makebox(0,0){\strut{}\small Distraction Rate: 1-TV Simulation}}%
+      }%
+      \gplbacktext
+      \put(0,0){\includegraphics[width={237.00bp},height={180.00bp}]{gnuplot_figs/Distraction_Rate_1-TV}}%
+      \gplfronttext
+    \end{picture}%
+  \endgroup
+  \caption{Distraction rate: 1-TV simulation.}
+  \label{Fig:DR1TV}
+\end{figure}
+
+
+\subsection{Learning Rate}
+
+Figures~\ref{Fig:MS4TV},~\ref{Fig:MS1TV}, and~\ref{Fig:MS0TV} show
+the number of undiscovered state transitions over time.  PIG initially
+explores faster than Random Walk in the 1-TV
+(\figurename~\ref{Fig:MS1TV}) and No-TV (\figurename~\ref{Fig:MS0TV})
+environments, owing to its directed exploration strategy.  However, in
+the 4-TV environment (\figurename~\ref{Fig:MS4TV}), PIG's initial
+advantage disappears as it becomes trapped by the Noisy TVs,
+ultimately performing worse than Random Walk.
+
+TPIG starts slower than both PIG and Random Walk in all three
+environments.  This is expected: TPIG must first accumulate enough
+transitions to build meaningful Q-values before its directed
+exploration becomes effective.  After this initial learning phase,
+TPIG consistently surpasses both PIG and Random Walk, discovering
+new transitions at a faster rate.  This crossover occurs earlier in
+smaller environments and later in larger ones.
+
+The $\epsilon$-greedy variants show no significant impact on learning
+rate, indicating that at $\epsilon = 10\%$, the random perturbation
+is too small to meaningfully affect the rate of new state discovery.
+
+\begin{figure}
+  \centering
+    % GNUPLOT: LaTeX picture with Postscript
+  \begingroup
+    \makeatletter
+    \providecommand\color[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package color not loaded in conjunction with
+        terminal option `colourtext'%
+      }{See the gnuplot documentation for explanation.%
+      }{Either use 'blacktext' in gnuplot or load the package
+        color.sty in LaTeX.}%
+      \renewcommand\color[2][]{}%
+    }%
+    \providecommand\includegraphics[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package graphicx or graphics not loaded%
+      }{See the gnuplot documentation for explanation.%
+      }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+      \renewcommand\includegraphics[2][]{}%
+    }%
+    \providecommand\rotatebox[2]{#2}%
+    \@ifundefined{ifGPcolor}{%
+      \newif\ifGPcolor
+      \GPcolortrue
+    }{}%
+    \@ifundefined{ifGPblacktext}{%
+      \newif\ifGPblacktext
+      \GPblacktexttrue
+    }{}%
+    % define a \g@addto@macro without @ in the name:
+    \let\gplgaddtomacro\g@addto@macro
+    % define empty templates for all commands taking text:
+    \gdef\gplbacktext{}%
+    \gdef\gplfronttext{}%
+    \makeatother
+    \ifGPblacktext
+      % no textcolor at all
+      \def\colorrgb#1{}%
+      \def\colorgray#1{}%
+    \else
+      % gray or color?
+      \ifGPcolor
+        \def\colorrgb#1{\color[rgb]{#1}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+        \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+        \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+        \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+        \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+        \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+        \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+        \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+        \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+      \else
+        % gray
+        \def\colorrgb#1{\color{black}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color{black}}%
+        \expandafter\def\csname LT1\endcsname{\color{black}}%
+        \expandafter\def\csname LT2\endcsname{\color{black}}%
+        \expandafter\def\csname LT3\endcsname{\color{black}}%
+        \expandafter\def\csname LT4\endcsname{\color{black}}%
+        \expandafter\def\csname LT5\endcsname{\color{black}}%
+        \expandafter\def\csname LT6\endcsname{\color{black}}%
+        \expandafter\def\csname LT7\endcsname{\color{black}}%
+        \expandafter\def\csname LT8\endcsname{\color{black}}%
+      \fi
+    \fi
+      \setlength{\unitlength}{0.0500bp}%
+      \ifx\gptboxheight\undefined%
+        \newlength{\gptboxheight}%
+        \newlength{\gptboxwidth}%
+        \newsavebox{\gptboxtext}%
+      \fi%
+      \setlength{\fboxrule}{0.5pt}%
+      \setlength{\fboxsep}{1pt}%
+      \definecolor{tbcol}{rgb}{1,1,1}%
+  \begin{picture}(4740.00,3600.00)%
+      \gplgaddtomacro\gplbacktext{%
+        \csname LTb\endcsname%%
+        \put(454,343){\makebox(0,0)[r]{\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(454,828){\makebox(0,0)[r]{\strut{}\scriptsize 20}}%
+        \csname LTb\endcsname%%
+        \put(454,1314){\makebox(0,0)[r]{\strut{}\scriptsize 40}}%
+        \csname LTb\endcsname%%
+        \put(454,1800){\makebox(0,0)[r]{\strut{}\scriptsize 60}}%
+        \csname LTb\endcsname%%
+        \put(454,2286){\makebox(0,0)[r]{\strut{}\scriptsize 80}}%
+        \csname LTb\endcsname%%
+        \put(454,2772){\makebox(0,0)[r]{\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(454,3258){\makebox(0,0)[r]{\strut{}\scriptsize 120}}%
+        \csname LTb\endcsname%%
+        \put(507,235){\makebox(0,0){\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(912,235){\makebox(0,0){\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(1318,235){\makebox(0,0){\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(1723,235){\makebox(0,0){\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(2128,235){\makebox(0,0){\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(2533,235){\makebox(0,0){\strut{}\scriptsize 500}}%
+        \csname LTb\endcsname%%
+        \put(2938,235){\makebox(0,0){\strut{}\scriptsize 600}}%
+        \csname LTb\endcsname%%
+        \put(3344,235){\makebox(0,0){\strut{}\scriptsize 700}}%
+        \csname LTb\endcsname%%
+        \put(3749,235){\makebox(0,0){\strut{}\scriptsize 800}}%
+        \csname LTb\endcsname%%
+        \put(4154,235){\makebox(0,0){\strut{}\scriptsize 900}}%
+        \csname LTb\endcsname%%
+        \put(4559,235){\makebox(0,0){\strut{}\scriptsize 1000}}%
+      }%
+      \gplgaddtomacro\gplfronttext{%
+        \csname LTb\endcsname%%
+        \put(4196,3153){\makebox(0,0)[r]{\strut{}\scriptsize Random Walk}}%
+        \csname LTb\endcsname%%
+        \put(4196,3028){\makebox(0,0)[r]{\strut{}\scriptsize PIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2903){\makebox(0,0)[r]{\strut{}\scriptsize EPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2778){\makebox(0,0)[r]{\strut{}\scriptsize TPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2653){\makebox(0,0)[r]{\strut{}\scriptsize ETPIG}}%
+        \csname LTb\endcsname%%
+        \put(93,1800){\rotatebox{-270.00}{\makebox(0,0){\strut{}\footnotesize Undiscovered State Transitions}}}%
+        \csname LTb\endcsname%%
+        \put(2533,75){\makebox(0,0){\strut{}\footnotesize TimeStep}}%
+        \csname LTb\endcsname%%
+        \put(2533,3419){\makebox(0,0){\strut{}\small Missed State Transitions: 4-TV Simulation}}%
+      }%
+      \gplbacktext
+      \put(0,0){\includegraphics[width={237.00bp},height={180.00bp}]{gnuplot_figs/Missed_States_4-TV}}%
+      \gplfronttext
+    \end{picture}%
+  \endgroup
+  \caption{Missed state transitions: 4-TV simulation.}
+  \label{Fig:MS4TV}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+    % GNUPLOT: LaTeX picture with Postscript
+  \begingroup
+    \makeatletter
+    \providecommand\color[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package color not loaded in conjunction with
+        terminal option `colourtext'%
+      }{See the gnuplot documentation for explanation.%
+      }{Either use 'blacktext' in gnuplot or load the package
+        color.sty in LaTeX.}%
+      \renewcommand\color[2][]{}%
+    }%
+    \providecommand\includegraphics[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package graphicx or graphics not loaded%
+      }{See the gnuplot documentation for explanation.%
+      }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+      \renewcommand\includegraphics[2][]{}%
+    }%
+    \providecommand\rotatebox[2]{#2}%
+    \@ifundefined{ifGPcolor}{%
+      \newif\ifGPcolor
+      \GPcolortrue
+    }{}%
+    \@ifundefined{ifGPblacktext}{%
+      \newif\ifGPblacktext
+      \GPblacktexttrue
+    }{}%
+    % define a \g@addto@macro without @ in the name:
+    \let\gplgaddtomacro\g@addto@macro
+    % define empty templates for all commands taking text:
+    \gdef\gplbacktext{}%
+    \gdef\gplfronttext{}%
+    \makeatother
+    \ifGPblacktext
+      % no textcolor at all
+      \def\colorrgb#1{}%
+      \def\colorgray#1{}%
+    \else
+      % gray or color?
+      \ifGPcolor
+        \def\colorrgb#1{\color[rgb]{#1}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+        \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+        \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+        \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+        \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+        \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+        \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+        \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+        \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+      \else
+        % gray
+        \def\colorrgb#1{\color{black}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color{black}}%
+        \expandafter\def\csname LT1\endcsname{\color{black}}%
+        \expandafter\def\csname LT2\endcsname{\color{black}}%
+        \expandafter\def\csname LT3\endcsname{\color{black}}%
+        \expandafter\def\csname LT4\endcsname{\color{black}}%
+        \expandafter\def\csname LT5\endcsname{\color{black}}%
+        \expandafter\def\csname LT6\endcsname{\color{black}}%
+        \expandafter\def\csname LT7\endcsname{\color{black}}%
+        \expandafter\def\csname LT8\endcsname{\color{black}}%
+      \fi
+    \fi
+      \setlength{\unitlength}{0.0500bp}%
+      \ifx\gptboxheight\undefined%
+        \newlength{\gptboxheight}%
+        \newlength{\gptboxwidth}%
+        \newsavebox{\gptboxtext}%
+      \fi%
+      \setlength{\fboxrule}{0.5pt}%
+      \setlength{\fboxsep}{1pt}%
+      \definecolor{tbcol}{rgb}{1,1,1}%
+  \begin{picture}(4740.00,3600.00)%
+      \gplgaddtomacro\gplbacktext{%
+        \csname LTb\endcsname%%
+        \put(454,343){\makebox(0,0)[r]{\strut{}\scriptsize 20}}%
+        \csname LTb\endcsname%%
+        \put(454,707){\makebox(0,0)[r]{\strut{}\scriptsize 40}}%
+        \csname LTb\endcsname%%
+        \put(454,1071){\makebox(0,0)[r]{\strut{}\scriptsize 60}}%
+        \csname LTb\endcsname%%
+        \put(454,1436){\makebox(0,0)[r]{\strut{}\scriptsize 80}}%
+        \csname LTb\endcsname%%
+        \put(454,1800){\makebox(0,0)[r]{\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(454,2165){\makebox(0,0)[r]{\strut{}\scriptsize 120}}%
+        \csname LTb\endcsname%%
+        \put(454,2529){\makebox(0,0)[r]{\strut{}\scriptsize 140}}%
+        \csname LTb\endcsname%%
+        \put(454,2893){\makebox(0,0)[r]{\strut{}\scriptsize 160}}%
+        \csname LTb\endcsname%%
+        \put(454,3258){\makebox(0,0)[r]{\strut{}\scriptsize 180}}%
+        \csname LTb\endcsname%%
+        \put(507,235){\makebox(0,0){\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(912,235){\makebox(0,0){\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(1318,235){\makebox(0,0){\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(1723,235){\makebox(0,0){\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(2128,235){\makebox(0,0){\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(2533,235){\makebox(0,0){\strut{}\scriptsize 500}}%
+        \csname LTb\endcsname%%
+        \put(2938,235){\makebox(0,0){\strut{}\scriptsize 600}}%
+        \csname LTb\endcsname%%
+        \put(3344,235){\makebox(0,0){\strut{}\scriptsize 700}}%
+        \csname LTb\endcsname%%
+        \put(3749,235){\makebox(0,0){\strut{}\scriptsize 800}}%
+        \csname LTb\endcsname%%
+        \put(4154,235){\makebox(0,0){\strut{}\scriptsize 900}}%
+        \csname LTb\endcsname%%
+        \put(4559,235){\makebox(0,0){\strut{}\scriptsize 1000}}%
+      }%
+      \gplgaddtomacro\gplfronttext{%
+        \csname LTb\endcsname%%
+        \put(4196,3153){\makebox(0,0)[r]{\strut{}\scriptsize Random Walk}}%
+        \csname LTb\endcsname%%
+        \put(4196,3028){\makebox(0,0)[r]{\strut{}\scriptsize PIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2903){\makebox(0,0)[r]{\strut{}\scriptsize EPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2778){\makebox(0,0)[r]{\strut{}\scriptsize TPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2653){\makebox(0,0)[r]{\strut{}\scriptsize ETPIG}}%
+        \csname LTb\endcsname%%
+        \put(93,1800){\rotatebox{-270.00}{\makebox(0,0){\strut{}\footnotesize Undiscovered State Transitions}}}%
+        \csname LTb\endcsname%%
+        \put(2533,75){\makebox(0,0){\strut{}\footnotesize TimeStep}}%
+        \csname LTb\endcsname%%
+        \put(2533,3419){\makebox(0,0){\strut{}\small Missed State Transitions: 1-TV Simulation}}%
+      }%
+      \gplbacktext
+      \put(0,0){\includegraphics[width={237.00bp},height={180.00bp}]{gnuplot_figs/Missed_States_1-TV}}%
+      \gplfronttext
+    \end{picture}%
+  \endgroup
+  \caption{Missed state transitions: 1-TV simulation.}
+  \label{Fig:MS1TV}
+\end{figure}
+
+\begin{figure}
+  \centering
+    % GNUPLOT: LaTeX picture with Postscript
+  \begingroup
+    \makeatletter
+    \providecommand\color[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package color not loaded in conjunction with
+        terminal option `colourtext'%
+      }{See the gnuplot documentation for explanation.%
+      }{Either use 'blacktext' in gnuplot or load the package
+        color.sty in LaTeX.}%
+      \renewcommand\color[2][]{}%
+    }%
+    \providecommand\includegraphics[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package graphicx or graphics not loaded%
+      }{See the gnuplot documentation for explanation.%
+      }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+      \renewcommand\includegraphics[2][]{}%
+    }%
+    \providecommand\rotatebox[2]{#2}%
+    \@ifundefined{ifGPcolor}{%
+      \newif\ifGPcolor
+      \GPcolortrue
+    }{}%
+    \@ifundefined{ifGPblacktext}{%
+      \newif\ifGPblacktext
+      \GPblacktexttrue
+    }{}%
+    % define a \g@addto@macro without @ in the name:
+    \let\gplgaddtomacro\g@addto@macro
+    % define empty templates for all commands taking text:
+    \gdef\gplbacktext{}%
+    \gdef\gplfronttext{}%
+    \makeatother
+    \ifGPblacktext
+      % no textcolor at all
+      \def\colorrgb#1{}%
+      \def\colorgray#1{}%
+    \else
+      % gray or color?
+      \ifGPcolor
+        \def\colorrgb#1{\color[rgb]{#1}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+        \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+        \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+        \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+        \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+        \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+        \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+        \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+        \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+      \else
+        % gray
+        \def\colorrgb#1{\color{black}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color{black}}%
+        \expandafter\def\csname LT1\endcsname{\color{black}}%
+        \expandafter\def\csname LT2\endcsname{\color{black}}%
+        \expandafter\def\csname LT3\endcsname{\color{black}}%
+        \expandafter\def\csname LT4\endcsname{\color{black}}%
+        \expandafter\def\csname LT5\endcsname{\color{black}}%
+        \expandafter\def\csname LT6\endcsname{\color{black}}%
+        \expandafter\def\csname LT7\endcsname{\color{black}}%
+        \expandafter\def\csname LT8\endcsname{\color{black}}%
+      \fi
+    \fi
+      \setlength{\unitlength}{0.0500bp}%
+      \ifx\gptboxheight\undefined%
+        \newlength{\gptboxheight}%
+        \newlength{\gptboxwidth}%
+        \newsavebox{\gptboxtext}%
+      \fi%
+      \setlength{\fboxrule}{0.5pt}%
+      \setlength{\fboxsep}{1pt}%
+      \definecolor{tbcol}{rgb}{1,1,1}%
+  \begin{picture}(4740.00,3600.00)%
+      \gplgaddtomacro\gplbacktext{%
+        \csname LTb\endcsname%%
+        \put(454,343){\makebox(0,0)[r]{\strut{}\scriptsize 50}}%
+        \csname LTb\endcsname%%
+        \put(454,926){\makebox(0,0)[r]{\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(454,1509){\makebox(0,0)[r]{\strut{}\scriptsize 150}}%
+        \csname LTb\endcsname%%
+        \put(454,2092){\makebox(0,0)[r]{\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(454,2675){\makebox(0,0)[r]{\strut{}\scriptsize 250}}%
+        \csname LTb\endcsname%%
+        \put(454,3258){\makebox(0,0)[r]{\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(507,235){\makebox(0,0){\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(912,235){\makebox(0,0){\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(1318,235){\makebox(0,0){\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(1723,235){\makebox(0,0){\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(2128,235){\makebox(0,0){\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(2533,235){\makebox(0,0){\strut{}\scriptsize 500}}%
+        \csname LTb\endcsname%%
+        \put(2938,235){\makebox(0,0){\strut{}\scriptsize 600}}%
+        \csname LTb\endcsname%%
+        \put(3344,235){\makebox(0,0){\strut{}\scriptsize 700}}%
+        \csname LTb\endcsname%%
+        \put(3749,235){\makebox(0,0){\strut{}\scriptsize 800}}%
+        \csname LTb\endcsname%%
+        \put(4154,235){\makebox(0,0){\strut{}\scriptsize 900}}%
+        \csname LTb\endcsname%%
+        \put(4559,235){\makebox(0,0){\strut{}\scriptsize 1000}}%
+      }%
+      \gplgaddtomacro\gplfronttext{%
+        \csname LTb\endcsname%%
+        \put(4196,3153){\makebox(0,0)[r]{\strut{}\scriptsize Random Walk}}%
+        \csname LTb\endcsname%%
+        \put(4196,3028){\makebox(0,0)[r]{\strut{}\scriptsize PIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2903){\makebox(0,0)[r]{\strut{}\scriptsize EPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2778){\makebox(0,0)[r]{\strut{}\scriptsize TPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2653){\makebox(0,0)[r]{\strut{}\scriptsize ETPIG}}%
+        \csname LTb\endcsname%%
+        \put(93,1800){\rotatebox{-270.00}{\makebox(0,0){\strut{}\footnotesize Undiscovered State Transitions}}}%
+        \csname LTb\endcsname%%
+        \put(2533,75){\makebox(0,0){\strut{}\footnotesize TimeStep}}%
+        \csname LTb\endcsname%%
+        \put(2533,3419){\makebox(0,0){\strut{}\small Missed State Transitions: No-TV Simulation}}%
+      }%
+      \gplbacktext
+      \put(0,0){\includegraphics[width={237.00bp},height={180.00bp}]{gnuplot_figs/Missed_States_No-TV}}%
+      \gplfronttext
+    \end{picture}%
+  \endgroup
+  \caption{Missed state transitions: No-TV simulation.}
+  \label{Fig:MS0TV}
+\end{figure}
+
+\subsection{Model Accuracy}
+
+Figures~\ref{Fig:MA4TV},~\ref{Fig:MA1TV}, and~\ref{Fig:MA0TV} show
+the KL-divergence between each agent's estimated model and the true
+transition model.  Interpreting this metric requires care: because
+undiscovered transitions would contribute infinity to the
+KL-divergence, they are excluded from the summation.  Consequently,
+an agent that has discovered more states may report a higher
+KL-divergence simply because more terms are included.  Model accuracy
+must therefore be evaluated jointly with the learning rate results.
+
+In the 4-TV environment (\figurename~\ref{Fig:MA4TV}), PIG shows
+worse KL-divergence than Random Walk and has discovered fewer states
+by the end of the simulation, placing it clearly behind the baseline.
+In the 1-TV environment (\figurename~\ref{Fig:MA1TV}), the comparison
+is closer: PIG has a slightly worse KL-divergence but has discovered
+more states, making the two roughly equivalent.
+
+TPIG achieves lower KL-divergence than both PIG and Random Walk at
+all time steps across all three environments, while simultaneously
+having discovered more transitions.  This combination indicates that
+TPIG both explores faster and learns the transition structure more
+accurately.  The advantage is especially pronounced in the 4-TV
+environment, where PIG wastes substantial time on non-informative TV
+interactions.
+
+In the No-TV control (\figurename~\ref{Fig:MA0TV}), where there are
+no distractors, PIG outperforms Random Walk and TPIG performs best.
+This confirms that TPIG's advantage is not merely an artifact of
+avoiding distractors; it produces genuinely better exploration even
+in clean environments.  The $\epsilon$-greedy variants perform
+comparably to their base algorithms, except in the No-TV case where
+random perturbation slightly hurts performance by diverting the agent
+from its optimal exploration path.
+Across all three metrics, TPIG's closed-loop verification
+consistently outperforms PIG's open-loop predictions in both noisy
+and clean environments.
+
+
+
+\begin{figure}[t]
+  \centering
+    % GNUPLOT: LaTeX picture with Postscript
+  \begingroup
+    \makeatletter
+    \providecommand\color[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package color not loaded in conjunction with
+        terminal option `colourtext'%
+      }{See the gnuplot documentation for explanation.%
+      }{Either use 'blacktext' in gnuplot or load the package
+        color.sty in LaTeX.}%
+      \renewcommand\color[2][]{}%
+    }%
+    \providecommand\includegraphics[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package graphicx or graphics not loaded%
+      }{See the gnuplot documentation for explanation.%
+      }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+      \renewcommand\includegraphics[2][]{}%
+    }%
+    \providecommand\rotatebox[2]{#2}%
+    \@ifundefined{ifGPcolor}{%
+      \newif\ifGPcolor
+      \GPcolortrue
+    }{}%
+    \@ifundefined{ifGPblacktext}{%
+      \newif\ifGPblacktext
+      \GPblacktexttrue
+    }{}%
+    % define a \g@addto@macro without @ in the name:
+    \let\gplgaddtomacro\g@addto@macro
+    % define empty templates for all commands taking text:
+    \gdef\gplbacktext{}%
+    \gdef\gplfronttext{}%
+    \makeatother
+    \ifGPblacktext
+      % no textcolor at all
+      \def\colorrgb#1{}%
+      \def\colorgray#1{}%
+    \else
+      % gray or color?
+      \ifGPcolor
+        \def\colorrgb#1{\color[rgb]{#1}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+        \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+        \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+        \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+        \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+        \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+        \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+        \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+        \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+      \else
+        % gray
+        \def\colorrgb#1{\color{black}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color{black}}%
+        \expandafter\def\csname LT1\endcsname{\color{black}}%
+        \expandafter\def\csname LT2\endcsname{\color{black}}%
+        \expandafter\def\csname LT3\endcsname{\color{black}}%
+        \expandafter\def\csname LT4\endcsname{\color{black}}%
+        \expandafter\def\csname LT5\endcsname{\color{black}}%
+        \expandafter\def\csname LT6\endcsname{\color{black}}%
+        \expandafter\def\csname LT7\endcsname{\color{black}}%
+        \expandafter\def\csname LT8\endcsname{\color{black}}%
+      \fi
+    \fi
+      \setlength{\unitlength}{0.0500bp}%
+      \ifx\gptboxheight\undefined%
+        \newlength{\gptboxheight}%
+        \newlength{\gptboxwidth}%
+        \newsavebox{\gptboxtext}%
+      \fi%
+      \setlength{\fboxrule}{0.5pt}%
+      \setlength{\fboxsep}{1pt}%
+      \definecolor{tbcol}{rgb}{1,1,1}%
+  \begin{picture}(4740.00,3600.00)%
+      \gplgaddtomacro\gplbacktext{%
+        \csname LTb\endcsname%%
+        \put(400,343){\makebox(0,0)[r]{\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(400,666){\makebox(0,0)[r]{\strut{}\scriptsize 5}}%
+        \csname LTb\endcsname%%
+        \put(400,990){\makebox(0,0)[r]{\strut{}\scriptsize 10}}%
+        \csname LTb\endcsname%%
+        \put(400,1314){\makebox(0,0)[r]{\strut{}\scriptsize 15}}%
+        \csname LTb\endcsname%%
+        \put(400,1638){\makebox(0,0)[r]{\strut{}\scriptsize 20}}%
+        \csname LTb\endcsname%%
+        \put(400,1962){\makebox(0,0)[r]{\strut{}\scriptsize 25}}%
+        \csname LTb\endcsname%%
+        \put(400,2286){\makebox(0,0)[r]{\strut{}\scriptsize 30}}%
+        \csname LTb\endcsname%%
+        \put(400,2610){\makebox(0,0)[r]{\strut{}\scriptsize 35}}%
+        \csname LTb\endcsname%%
+        \put(400,2934){\makebox(0,0)[r]{\strut{}\scriptsize 40}}%
+        \csname LTb\endcsname%%
+        \put(400,3258){\makebox(0,0)[r]{\strut{}\scriptsize 45}}%
+        \csname LTb\endcsname%%
+        \put(454,235){\makebox(0,0){\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(864,235){\makebox(0,0){\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(1275,235){\makebox(0,0){\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(1685,235){\makebox(0,0){\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(2096,235){\makebox(0,0){\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(2507,235){\makebox(0,0){\strut{}\scriptsize 500}}%
+        \csname LTb\endcsname%%
+        \put(2917,235){\makebox(0,0){\strut{}\scriptsize 600}}%
+        \csname LTb\endcsname%%
+        \put(3328,235){\makebox(0,0){\strut{}\scriptsize 700}}%
+        \csname LTb\endcsname%%
+        \put(3738,235){\makebox(0,0){\strut{}\scriptsize 800}}%
+        \csname LTb\endcsname%%
+        \put(4149,235){\makebox(0,0){\strut{}\scriptsize 900}}%
+        \csname LTb\endcsname%%
+        \put(4559,235){\makebox(0,0){\strut{}\scriptsize 1000}}%
+      }%
+      \gplgaddtomacro\gplfronttext{%
+        \csname LTb\endcsname%%
+        \put(4196,3153){\makebox(0,0)[r]{\strut{}\scriptsize Random Walk}}%
+        \csname LTb\endcsname%%
+        \put(4196,3028){\makebox(0,0)[r]{\strut{}\scriptsize PIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2903){\makebox(0,0)[r]{\strut{}\scriptsize EPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2778){\makebox(0,0)[r]{\strut{}\scriptsize TPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2653){\makebox(0,0)[r]{\strut{}\scriptsize ETPIG}}%
+        \csname LTb\endcsname%%
+        \put(93,1800){\rotatebox{-270.00}{\makebox(0,0){\strut{}\footnotesize KL-Divergence}}}%
+        \csname LTb\endcsname%%
+        \put(2507,75){\makebox(0,0){\strut{}\footnotesize TimeStep}}%
+        \csname LTb\endcsname%%
+        \put(2507,3419){\makebox(0,0){\strut{}\small Model Accuracy: 4-TV Simulation}}%
+      }%
+      \gplbacktext
+      \put(0,0){\includegraphics[width={237.00bp},height={180.00bp}]{gnuplot_figs/Model_Accuracy_4-TV}}%
+      \gplfronttext
+    \end{picture}%
+  \endgroup
+  \caption{Model accuracy (KL-divergence): 4-TV simulation.}
+  \label{Fig:MA4TV}
+\end{figure}
+
+\begin{figure}
+  \centering
+    % GNUPLOT: LaTeX picture with Postscript
+  \begingroup
+    \makeatletter
+    \providecommand\color[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package color not loaded in conjunction with
+        terminal option `colourtext'%
+      }{See the gnuplot documentation for explanation.%
+      }{Either use 'blacktext' in gnuplot or load the package
+        color.sty in LaTeX.}%
+      \renewcommand\color[2][]{}%
+    }%
+    \providecommand\includegraphics[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package graphicx or graphics not loaded%
+      }{See the gnuplot documentation for explanation.%
+      }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+      \renewcommand\includegraphics[2][]{}%
+    }%
+    \providecommand\rotatebox[2]{#2}%
+    \@ifundefined{ifGPcolor}{%
+      \newif\ifGPcolor
+      \GPcolortrue
+    }{}%
+    \@ifundefined{ifGPblacktext}{%
+      \newif\ifGPblacktext
+      \GPblacktexttrue
+    }{}%
+    % define a \g@addto@macro without @ in the name:
+    \let\gplgaddtomacro\g@addto@macro
+    % define empty templates for all commands taking text:
+    \gdef\gplbacktext{}%
+    \gdef\gplfronttext{}%
+    \makeatother
+    \ifGPblacktext
+      % no textcolor at all
+      \def\colorrgb#1{}%
+      \def\colorgray#1{}%
+    \else
+      % gray or color?
+      \ifGPcolor
+        \def\colorrgb#1{\color[rgb]{#1}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+        \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+        \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+        \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+        \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+        \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+        \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+        \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+        \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+      \else
+        % gray
+        \def\colorrgb#1{\color{black}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color{black}}%
+        \expandafter\def\csname LT1\endcsname{\color{black}}%
+        \expandafter\def\csname LT2\endcsname{\color{black}}%
+        \expandafter\def\csname LT3\endcsname{\color{black}}%
+        \expandafter\def\csname LT4\endcsname{\color{black}}%
+        \expandafter\def\csname LT5\endcsname{\color{black}}%
+        \expandafter\def\csname LT6\endcsname{\color{black}}%
+        \expandafter\def\csname LT7\endcsname{\color{black}}%
+        \expandafter\def\csname LT8\endcsname{\color{black}}%
+      \fi
+    \fi
+      \setlength{\unitlength}{0.0500bp}%
+      \ifx\gptboxheight\undefined%
+        \newlength{\gptboxheight}%
+        \newlength{\gptboxwidth}%
+        \newsavebox{\gptboxtext}%
+      \fi%
+      \setlength{\fboxrule}{0.5pt}%
+      \setlength{\fboxsep}{1pt}%
+      \definecolor{tbcol}{rgb}{1,1,1}%
+  \begin{picture}(4740.00,3600.00)%
+      \gplgaddtomacro\gplbacktext{%
+        \csname LTb\endcsname%%
+        \put(400,343){\makebox(0,0)[r]{\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(400,828){\makebox(0,0)[r]{\strut{}\scriptsize 10}}%
+        \csname LTb\endcsname%%
+        \put(400,1314){\makebox(0,0)[r]{\strut{}\scriptsize 20}}%
+        \csname LTb\endcsname%%
+        \put(400,1800){\makebox(0,0)[r]{\strut{}\scriptsize 30}}%
+        \csname LTb\endcsname%%
+        \put(400,2286){\makebox(0,0)[r]{\strut{}\scriptsize 40}}%
+        \csname LTb\endcsname%%
+        \put(400,2772){\makebox(0,0)[r]{\strut{}\scriptsize 50}}%
+        \csname LTb\endcsname%%
+        \put(400,3258){\makebox(0,0)[r]{\strut{}\scriptsize 60}}%
+        \csname LTb\endcsname%%
+        \put(454,235){\makebox(0,0){\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(864,235){\makebox(0,0){\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(1275,235){\makebox(0,0){\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(1685,235){\makebox(0,0){\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(2096,235){\makebox(0,0){\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(2507,235){\makebox(0,0){\strut{}\scriptsize 500}}%
+        \csname LTb\endcsname%%
+        \put(2917,235){\makebox(0,0){\strut{}\scriptsize 600}}%
+        \csname LTb\endcsname%%
+        \put(3328,235){\makebox(0,0){\strut{}\scriptsize 700}}%
+        \csname LTb\endcsname%%
+        \put(3738,235){\makebox(0,0){\strut{}\scriptsize 800}}%
+        \csname LTb\endcsname%%
+        \put(4149,235){\makebox(0,0){\strut{}\scriptsize 900}}%
+        \csname LTb\endcsname%%
+        \put(4559,235){\makebox(0,0){\strut{}\scriptsize 1000}}%
+      }%
+      \gplgaddtomacro\gplfronttext{%
+        \csname LTb\endcsname%%
+        \put(4196,3153){\makebox(0,0)[r]{\strut{}\scriptsize Random Walk}}%
+        \csname LTb\endcsname%%
+        \put(4196,3028){\makebox(0,0)[r]{\strut{}\scriptsize PIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2903){\makebox(0,0)[r]{\strut{}\scriptsize EPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2778){\makebox(0,0)[r]{\strut{}\scriptsize TPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2653){\makebox(0,0)[r]{\strut{}\scriptsize ETPIG}}%
+        \csname LTb\endcsname%%
+        \put(93,1800){\rotatebox{-270.00}{\makebox(0,0){\strut{}\footnotesize KL-Divergence}}}%
+        \csname LTb\endcsname%%
+        \put(2507,75){\makebox(0,0){\strut{}\footnotesize TimeStep}}%
+        \csname LTb\endcsname%%
+        \put(2507,3419){\makebox(0,0){\strut{}\small Model Accuracy: 1-TV Simulation}}%
+      }%
+      \gplbacktext
+      \put(0,0){\includegraphics[width={237.00bp},height={180.00bp}]{gnuplot_figs/Model_Accuracy_1-TV}}%
+      \gplfronttext
+    \end{picture}%
+  \endgroup
+  \caption{Model accuracy (KL-divergence): 1-TV simulation.}
+  \label{Fig:MA1TV}
+\end{figure}
+
+\begin{figure}
+  \centering
+    % GNUPLOT: LaTeX picture with Postscript
+  \begingroup
+    \makeatletter
+    \providecommand\color[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package color not loaded in conjunction with
+        terminal option `colourtext'%
+      }{See the gnuplot documentation for explanation.%
+      }{Either use 'blacktext' in gnuplot or load the package
+        color.sty in LaTeX.}%
+      \renewcommand\color[2][]{}%
+    }%
+    \providecommand\includegraphics[2][]{%
+      \GenericError{(gnuplot) \space\space\space\@spaces}{%
+        Package graphicx or graphics not loaded%
+      }{See the gnuplot documentation for explanation.%
+      }{The gnuplot epslatex terminal needs graphicx.sty or graphics.sty.}%
+      \renewcommand\includegraphics[2][]{}%
+    }%
+    \providecommand\rotatebox[2]{#2}%
+    \@ifundefined{ifGPcolor}{%
+      \newif\ifGPcolor
+      \GPcolortrue
+    }{}%
+    \@ifundefined{ifGPblacktext}{%
+      \newif\ifGPblacktext
+      \GPblacktexttrue
+    }{}%
+    % define a \g@addto@macro without @ in the name:
+    \let\gplgaddtomacro\g@addto@macro
+    % define empty templates for all commands taking text:
+    \gdef\gplbacktext{}%
+    \gdef\gplfronttext{}%
+    \makeatother
+    \ifGPblacktext
+      % no textcolor at all
+      \def\colorrgb#1{}%
+      \def\colorgray#1{}%
+    \else
+      % gray or color?
+      \ifGPcolor
+        \def\colorrgb#1{\color[rgb]{#1}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color[rgb]{1,0,0}}%
+        \expandafter\def\csname LT1\endcsname{\color[rgb]{0,1,0}}%
+        \expandafter\def\csname LT2\endcsname{\color[rgb]{0,0,1}}%
+        \expandafter\def\csname LT3\endcsname{\color[rgb]{1,0,1}}%
+        \expandafter\def\csname LT4\endcsname{\color[rgb]{0,1,1}}%
+        \expandafter\def\csname LT5\endcsname{\color[rgb]{1,1,0}}%
+        \expandafter\def\csname LT6\endcsname{\color[rgb]{0,0,0}}%
+        \expandafter\def\csname LT7\endcsname{\color[rgb]{1,0.3,0}}%
+        \expandafter\def\csname LT8\endcsname{\color[rgb]{0.5,0.5,0.5}}%
+      \else
+        % gray
+        \def\colorrgb#1{\color{black}}%
+        \def\colorgray#1{\color[gray]{#1}}%
+        \expandafter\def\csname LTw\endcsname{\color{white}}%
+        \expandafter\def\csname LTb\endcsname{\color{black}}%
+        \expandafter\def\csname LTa\endcsname{\color{black}}%
+        \expandafter\def\csname LT0\endcsname{\color{black}}%
+        \expandafter\def\csname LT1\endcsname{\color{black}}%
+        \expandafter\def\csname LT2\endcsname{\color{black}}%
+        \expandafter\def\csname LT3\endcsname{\color{black}}%
+        \expandafter\def\csname LT4\endcsname{\color{black}}%
+        \expandafter\def\csname LT5\endcsname{\color{black}}%
+        \expandafter\def\csname LT6\endcsname{\color{black}}%
+        \expandafter\def\csname LT7\endcsname{\color{black}}%
+        \expandafter\def\csname LT8\endcsname{\color{black}}%
+      \fi
+    \fi
+      \setlength{\unitlength}{0.0500bp}%
+      \ifx\gptboxheight\undefined%
+        \newlength{\gptboxheight}%
+        \newlength{\gptboxwidth}%
+        \newsavebox{\gptboxtext}%
+      \fi%
+      \setlength{\fboxrule}{0.5pt}%
+      \setlength{\fboxsep}{1pt}%
+      \definecolor{tbcol}{rgb}{1,1,1}%
+  \begin{picture}(4740.00,3600.00)%
+      \gplgaddtomacro\gplbacktext{%
+        \csname LTb\endcsname%%
+        \put(400,343){\makebox(0,0)[r]{\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(400,707){\makebox(0,0)[r]{\strut{}\scriptsize 10}}%
+        \csname LTb\endcsname%%
+        \put(400,1071){\makebox(0,0)[r]{\strut{}\scriptsize 20}}%
+        \csname LTb\endcsname%%
+        \put(400,1436){\makebox(0,0)[r]{\strut{}\scriptsize 30}}%
+        \csname LTb\endcsname%%
+        \put(400,1800){\makebox(0,0)[r]{\strut{}\scriptsize 40}}%
+        \csname LTb\endcsname%%
+        \put(400,2165){\makebox(0,0)[r]{\strut{}\scriptsize 50}}%
+        \csname LTb\endcsname%%
+        \put(400,2529){\makebox(0,0)[r]{\strut{}\scriptsize 60}}%
+        \csname LTb\endcsname%%
+        \put(400,2893){\makebox(0,0)[r]{\strut{}\scriptsize 70}}%
+        \csname LTb\endcsname%%
+        \put(400,3258){\makebox(0,0)[r]{\strut{}\scriptsize 80}}%
+        \csname LTb\endcsname%%
+        \put(454,235){\makebox(0,0){\strut{}\scriptsize 0}}%
+        \csname LTb\endcsname%%
+        \put(864,235){\makebox(0,0){\strut{}\scriptsize 100}}%
+        \csname LTb\endcsname%%
+        \put(1275,235){\makebox(0,0){\strut{}\scriptsize 200}}%
+        \csname LTb\endcsname%%
+        \put(1685,235){\makebox(0,0){\strut{}\scriptsize 300}}%
+        \csname LTb\endcsname%%
+        \put(2096,235){\makebox(0,0){\strut{}\scriptsize 400}}%
+        \csname LTb\endcsname%%
+        \put(2507,235){\makebox(0,0){\strut{}\scriptsize 500}}%
+        \csname LTb\endcsname%%
+        \put(2917,235){\makebox(0,0){\strut{}\scriptsize 600}}%
+        \csname LTb\endcsname%%
+        \put(3328,235){\makebox(0,0){\strut{}\scriptsize 700}}%
+        \csname LTb\endcsname%%
+        \put(3738,235){\makebox(0,0){\strut{}\scriptsize 800}}%
+        \csname LTb\endcsname%%
+        \put(4149,235){\makebox(0,0){\strut{}\scriptsize 900}}%
+        \csname LTb\endcsname%%
+        \put(4559,235){\makebox(0,0){\strut{}\scriptsize 1000}}%
+      }%
+      \gplgaddtomacro\gplfronttext{%
+        \csname LTb\endcsname%%
+        \put(4196,3153){\makebox(0,0)[r]{\strut{}\scriptsize Random Walk}}%
+        \csname LTb\endcsname%%
+        \put(4196,3028){\makebox(0,0)[r]{\strut{}\scriptsize PIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2903){\makebox(0,0)[r]{\strut{}\scriptsize EPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2778){\makebox(0,0)[r]{\strut{}\scriptsize TPIG}}%
+        \csname LTb\endcsname%%
+        \put(4196,2653){\makebox(0,0)[r]{\strut{}\scriptsize ETPIG}}%
+        \csname LTb\endcsname%%
+        \put(93,1800){\rotatebox{-270.00}{\makebox(0,0){\strut{}\footnotesize KL-Divergence}}}%
+        \csname LTb\endcsname%%
+        \put(2507,75){\makebox(0,0){\strut{}\footnotesize TimeStep}}%
+        \csname LTb\endcsname%%
+        \put(2507,3419){\makebox(0,0){\strut{}\small Model Accuracy: No-TV Simulation}}%
+      }%
+      \gplbacktext
+      \put(0,0){\includegraphics[width={237.00bp},height={180.00bp}]{gnuplot_figs/Model_Accuracy_No-TV}}%
+      \gplfronttext
+    \end{picture}%
+  \endgroup
+  \caption{Model accuracy (KL-divergence): No-TV simulation.}
+  \label{Fig:MA0TV}
+\end{figure}
+
+\subsection{Effect of Epsilon}
+
+We tested $\epsilon$ values in increments of 20\% for both EPIG and
+ETPIG.  In the 4-TV simulation, higher $\epsilon$ reduces
+distractions for both algorithms.  For ETPIG, all $\epsilon$ values
+converge to similar learning rates by time step~250.  In the 1-TV and
+No-TV simulations, lower $\epsilon$ values yield better long-term
+performance for ETPIG, suggesting that TPIG's learned avoidance makes
+heavy randomization counterproductive.  Pure TPIG ($\epsilon = 0$)
+exhibits early artifacts smoothed by even small $\epsilon$ values,
+suggesting that modest randomization stabilizes TPIG's learning
+dynamics.  For PIG-based methods, higher $\epsilon$ is consistently
+helpful since PIG lacks any mechanism to learn from its mistakes
+and requires external randomization to escape distraction loops.
+This asymmetry further confirms that the predict-then-verify mechanism
+provides its own form of learned exploration control.
+
+\section{Discussion}
+
+By conditioning rewards on the measured decrease in model uncertainty,
+the predict-then-verify approach transforms exploration into a
+closed-loop feedback system.  The Noisy TV generates large predictions
+but negligible actual learning, so Q-values for TV-related actions
+naturally decay.  Because the reward converges to zero as the model
+approaches the true distribution, TPIG inherits TD convergence
+guarantees~\cite{Sutton1998}, unlike open-loop curiosity methods that
+can be permanently misled by stochastic stimuli.
+
+\subsection{TPIG's Learning Dynamics}
+
+TPIG exhibits a characteristic two-phase behavior.  In the first
+phase, TPIG explores broadly and somewhat inefficiently while
+accumulating the transition data needed to compute meaningful rewards.
+During this phase, PIG may outperform TPIG on learning rate because
+PIG immediately pursues the highest-predicted-gain actions.  In the
+second phase, TPIG's Q-values have stabilized enough to reliably
+distinguish informative actions from noisy ones, and TPIG surpasses
+PIG on all metrics.  This pattern is consistent across all 100 trials,
+as the narrow error bands in the figures confirm.
+
+The duration of this initial learning phase scales with environment
+size.  In the $4 \times 4$ 4-TV environment, the crossover occurs
+around time step~200; in the $5 \times 5$ 1-TV environment, around
+time step~300; and in the $6 \times 6$ No-TV environment, around time
+step~400.  This approximately linear scaling suggests that TPIG's startup cost
+is predictable and proportional to the number of state-action pairs,
+representing 20--40\% of the episode length across the environments
+tested.
+The learning rate $\alpha = 0.9$ and
+discount factor $\gamma = 0.9$ were chosen to favor rapid adaptation;
+preliminary experiments suggest the results are robust for all
+$\gamma \geq 0.5$, with low $\alpha$ providing a conservative mode
+that prioritizes distraction avoidance over exploration speed.
+
+\subsection{The Role of Epsilon}
+
+The interaction between $\epsilon$-greedy exploration and TPIG
+reveals an important property.  In environments with many distractors
+(4-TV), higher values of $\epsilon$ help both EPIG and ETPIG escape
+distraction loops.  However, in environments with few or no
+distractors (1-TV, No-TV), lower values of $\epsilon$ yield better
+long-term performance for ETPIG.  This asymmetry arises because TPIG
+already learns to avoid distractors on its own; adding random
+exploration on top of an already-effective avoidance strategy simply
+introduces noise that slows convergence.
+
+For PIG-based methods (EPIG), higher $\epsilon$ is consistently
+helpful in environments with distractors, since PIG lacks any
+mechanism to learn from its mistakes and requires external
+randomization to escape.
+
+\subsection{Comparison with Other Approaches}
+
+Unlike RND~\cite{Burda2019RND} or ICM~\cite{Pathak2017ICM}, TPIG
+requires no auxiliary networks, no explicit distractor detection, and
+no prior knowledge of which states are noisy.  Its noise resistance
+emerges naturally from the closed-loop reward structure and also
+improves exploration in clean environments, as the No-TV results
+demonstrate.  Because the predict-then-verify mechanism is independent
+of the specific divergence measure, practitioners could substitute
+MSE or other metrics for KL-divergence with comparable results.
+
+\subsection{Limitations}
+
+The current study has several limitations.  First, the grid-world
+environments are tabular.  Scaling to continuous state spaces would
+require function approximation for the transition model and Q-values.
+Second, our unbounded noise model (infinitely many unique TV states)
+represents a worst case for novelty-based methods; real-world
+distractors with finite state spaces would be easier to overcome.
+Third, we do not combine TPIG's intrinsic reward with extrinsic
+rewards for goal-directed tasks.
+However, the $\pm 1\sigma$ bands in all figures confirm low
+inter-trial variance, indicating that the results reported here
+are statistically robust despite these limitations.
+
+\section{Conclusion}
+
+We introduced the predict-then-verify principle for curiosity-driven
+exploration, instantiated as TPIG.  Across three grid-world
+environments with zero to four distractors, TPIG outperformed PIG on
+all metrics: fewer distractions, faster exploration, and more accurate
+models.  Because
+the principle depends on measured improvement rather than a specific
+divergence measure, it could equally be instantiated with MSE or other
+metrics, and integrated into deep RL curiosity methods such as
+ICM~\cite{Pathak2017ICM} or RND~\cite{Burda2019RND}.  The choice of divergence measure becomes a tunable design parameter
+rather than a fundamental algorithmic decision.  Future work includes
+scaling to continuous environments, testing with MSE and other
+divergence measures, and combining intrinsic and extrinsic rewards.
+
+
+\bibliographystyle{flairs}
+\bibliography{Thesis_David_Mathews}
+
+\end{document}

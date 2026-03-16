@@ -35,6 +35,7 @@ class Simulation {
    	int numActions = 4; // ok, just hardcode it
 		int noisy = 0;
 		int seed = 0;
+		unsigned int rand_seed = 0;
 		SimState **states; //Dynamic Memory Allocation 
 		int ***transitions; //Dynamic Memory Allocation 
 		std::ifstream fin;

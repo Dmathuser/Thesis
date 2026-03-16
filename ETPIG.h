@@ -6,6 +6,7 @@ class ETPIG_alg : public Policy {
 	// StateTransitionVector **transitionCount[numStates][ACTION_SIZE][???]; // IS THETA_HAT
 	private:
 	int seed = 0;
+	unsigned int rand_seed = 0;
 	int EPSILON = 0;
 	double alpha = 0.9;
 	double gamma = 0.9;

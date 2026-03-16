@@ -10,7 +10,7 @@ Simulation::Simulation()
 Simulation::Simulation(int seed)
 {
 	this->seed = seed;
-	srand(seed); //Might be slow...
+	rand_seed = seed; //Might be slow...
 }
 
 Simulation::Simulation(std::string filename)
@@ -21,7 +21,7 @@ Simulation::Simulation(std::string filename)
 Simulation::Simulation(std::string filename, int seed)
 {
 	this->seed = seed;
-	srand(seed);
+	rand_seed = seed;
 	initializeSim(filename);
 }
 
@@ -510,7 +510,7 @@ bool Simulation::moveState(Action a)
 	// Ex. [5, 10, 30 | 45] for 3 states where TOTAL_PROB is the 45.
 	// If a 20 is rolled, it will pick slot 3, since 5 + 10 < 20.
 	// If a 14 is rolled, it will pick slot 2, since 5 + 10 > 14.
-	int randNum = (rand()%TOTAL_PROB);
+	int randNum = (rand_r(&rand_seed)%TOTAL_PROB);
 	int transitionSum = 0;
 	int s = curState->stateIndex;
 

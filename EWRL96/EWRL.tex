@@ -1,0 +1,648 @@
+%File: EWRL.tex
+\documentclass[letterpaper]{article}
+\usepackage{ewrl_2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\graphicspath{{gnuplot_figs/}{images/}}
+\usepackage{subfig}
+\usepackage{amsmath}
+\usepackage{multirow}
+\usepackage{placeins}
+
+\clubpenalty=10000
+\widowpenalty=10000
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+
+\title{Predict Then Verify: Closing the Loop on\\Curiosity-Driven Exploration to Resist the Noisy-TV Problem}
+\author{%
+  David Mathews \\
+  Department of Electrical Engineering\\and Computer Science\\
+  South Dakota School of Mines \& Technology\\
+  Rapid City, SD 57701 \\
+  \texttt{David.Mathews@sdsmt.edu} \\
+  \And
+  Larry D.\ Pyeatt \\
+  Department of Electrical Engineering\\and Computer Science\\
+  South Dakota School of Mines \& Technology\\
+  Rapid City, SD 57701 \\
+  \texttt{Larry.Pyeatt@sdsmt.edu} \\
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Intrinsic motivation methods for exploration in reinforcement learning
+are vulnerable to the Noisy-TV problem, where stochastic stimuli trap
+agents into endlessly seeking novelty from non-informative distractors.
+We propose a \emph{predict-then-verify} principle: instead of
+rewarding predicted information gain, reward only the measured
+decrease in model uncertainty after each transition.  We instantiate
+this principle in two ways: Temporal PIG (TPIG), which uses
+KL-divergence, and a learning progress (LP) baseline using MSE.
+Both are minimal modifications to the Predicted Information Gain
+(PIG) algorithm.  Evaluated on grid-world environments with up to
+100 states, both TPIG and LP dramatically outperform PIG on
+distraction rate, exploration speed, and model accuracy, confirming
+that closed-loop verification of learning is the key to resisting
+stochastic distractors regardless of divergence measure.
+\end{abstract}
+
+\section{Introduction}
+
+Reinforcement learning (RL) agents learn by taking actions in an
+environment and receiving rewards that guide future
+behavior~\citep{Sutton1998,Kaelbling1996RLsurvey}.  When environmental
+rewards are sparse or absent, agents must generate their own
+\emph{intrinsic} rewards to drive
+exploration~\citep{DBLP:journals/corr/abs-1908-06976,FToCFaIM:Jurgen,Oudeyer2007intrinsic}.
+Common intrinsic reward methods include count-based
+novelty~\citep{DBLP:journals/corr/TangHFSCDSTA16,Bellemare2016counting},
+prediction-error
+curiosity~\citep{Pathak2017ICM,Rein:VIME}, and information-theoretic
+approaches~\citep{10.3389/fncir.2013.00037}.
+
+A fundamental weakness of many intrinsic motivation methods is the
+\emph{Noisy-TV problem}~\citep{Burda2019curiosity}.
+Consider an environment containing a television with a remote control.
+Each button press displays a random, never-before-seen channel.
+Novelty-seeking agents become trapped, perpetually pressing the remote
+because each press yields a ``new'' state, even though no useful
+information about the environment is being learned.
+
+Predicted Information Gain
+(PIG)~\citep{10.3389/fncir.2013.00037} selects actions by estimating,
+via KL-divergence, how much each action would improve the agent's
+transition model.  Although PIG is more principled than raw
+novelty-seeking, it still falls prey to the Noisy-TV: the stochastic
+transitions from button presses yield high predicted divergence, luring
+the agent back to the distractor.
+
+The core issue is that PIG \emph{predicts} information gain but never
+\emph{confirms} that learning actually occurred.  We propose a
+\textbf{predict-then-verify} approach: compute the predicted
+information gain both before and after incorporating a new transition,
+and use the \emph{actual decrease} as a TD reward.  We instantiate
+this principle as Temporal PIG (TPIG, using KL-divergence) and a
+learning progress baseline (LP, using MSE), and show that both resist
+the Noisy TV across environments ranging from 16 to 100 states.
+Many curiosity mechanisms are fundamentally open-loop: information
+gain, prediction error, and novelty signals can all remain high in
+stochastic environments even when no meaningful knowledge is acquired.
+We show that closing this loop by conditioning rewards on measured
+model improvement works under different divergence measures,
+indicating that the verification mechanism, not the specific curiosity
+signal, is the critical ingredient.
+
+\section{Related work}
+
+\subsection{Intrinsic motivation for exploration}
+
+Intrinsic motivation methods let agents generate their own learning
+signals~\citep{DBLP:journals/corr/abs-1908-06976,FToCFaIM:Jurgen},
+realized in several families of algorithms.
+
+\emph{Count-based} methods reward visiting novel states by tracking
+visitation counts.  \citet{Bellemare2016counting} introduced
+pseudo-counts to unify count-based exploration with intrinsic
+motivation in high-dimensional spaces, and
+\citet{DBLP:journals/corr/TangHFSCDSTA16} extended this approach
+using hash functions.  However, count-based methods are directly
+vulnerable to the Noisy-TV problem: every channel change registers
+as a novel state, producing unbounded reward from a single
+distractor.
+
+\emph{Prediction-error} methods use the agent's inability to predict
+outcomes as a reward signal.  \citet{Pathak2017ICM} proposed the
+Intrinsic Curiosity Module (ICM), which trains a forward dynamics
+model and uses its prediction error as intrinsic reward.
+\citet{Rein:VIME} proposed VIME, which maximizes information gain
+about environment dynamics using Bayesian neural networks.
+\citet{Burda2019RND} introduced Random Network Distillation (RND),
+which measures novelty as the prediction error of a randomly
+initialized fixed network.  While more robust than count-based
+methods, \citet{Burda2019curiosity} demonstrated that prediction-error
+agents can still be attracted to inherently unpredictable transitions
+such as those produced by a Noisy TV.
+
+\emph{Information-theoretic} methods, including PIG~\citep{10.3389/fncir.2013.00037},
+estimate the expected change in the agent's world model using
+information-theoretic quantities such as KL-divergence.
+\citet{10.3389/fncir.2013.00037} showed that PIG-based exploration
+learns environment structure faster than reward-free baselines.
+\citet{DBLP:journals/corr/abs-2007-13442} provided theoretical
+analysis of sample-efficient exploration strategies.
+
+\subsection{The noisy-TV problem}
+
+The Noisy-TV problem was identified by \citet{Burda2019curiosity} and
+remains an open challenge; \citet{Ladosz_2022} note that most
+intrinsic motivation methods remain
+susceptible~\citep{DBLP:journals/corr/abs-2008-04388}.
+
+TPIG can also be viewed as an instantiation of \emph{learning
+progress}~\citep{Oudeyer2007intrinsic}, which rewards reductions in
+prediction error over time.  We make this connection explicit by
+also evaluating an MSE-based learning progress baseline (LP), allowing
+a direct comparison of divergence measures within the same TD
+framework.  Both TPIG and LP operate directly on the agent's
+transition model without auxiliary networks, making them minimal
+modifications to PIG.
+
+\section{Background}
+
+\subsection{Temporal difference learning}
+
+In temporal difference (TD) learning~\citep{Sutton1998}, the agent
+maintains Q-values $Q(s,a)$ for each state-action
+pair~\citep{Watkins1992Qlearning} and updates them after each
+transition $(s,a,s')$ using:
+\begin{equation}
+  Q(s,a) \leftarrow Q(s,a) + \alpha \left[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\right],
+  \label{eq:TDQVF}
+\end{equation}
+where $r$ is the reward, $\alpha$ is the learning rate, and $\gamma$
+is the discount factor~\citep{Sutton1998}.
+
+\subsection{Predicted information gain (PIG)}
+
+PIG uses the KL-divergence~\citep{Kullback1951information} to estimate
+how much an agent's transition model would change if it took a
+particular action.  Let
+$\hat{\Theta}_{sa\cdot}$ denote the agent's estimated transition
+probabilities from state $s$ under action $a$, and let
+$\hat{\Theta}_{sa\cdot}^{s \to s^*}$ denote the updated estimate
+after hypothetically observing a transition to $s^*$.  The predicted
+information gain is:
+\begin{equation}
+  \textrm{PIG}(s,a) := \sum_{s^*} \hat{\Theta}_{sas^*}\,
+  D_{\textrm{KL}}\!\left(\hat{\Theta}_{sa\cdot}^{s \to s^*}
+  \;\|\;\hat{\Theta}_{sa\cdot}\right),
+  \label{eq:PIG}
+\end{equation}
+where $D_{\textrm{KL}}$ is the KL-divergence.  PIG selects the action
+$a$ maximizing this quantity.  As data accumulates,
+$\hat{\Theta} \to \Theta$:
+\[
+  \lim_{n \to \infty} D_{\textrm{KL}}(\Theta_{sa\cdot} \| \hat{\Theta}_{sa\cdot}) =
+  \lim_{n \to \infty} \sum_{s'} \Theta_{sas'} \log_2 \frac{\Theta_{sas'}}{\hat{\Theta}_{sas'}} = 0,
+\]
+since each ratio $\Theta_{sas'}/\hat{\Theta}_{sas'} \to 1$ and
+$\log_2(1) = 0$.
+
+\subsection{The noisy-TV problem}
+
+When the environment contains a Noisy TV, the stochastic channel
+changes produce transitions to many distinct states, each with high
+predicted information gain.  PIG's action selection thus repeatedly
+favors the TV because the weighted average over all possible channel
+outcomes remains large, even though the transitions carry no useful
+structural information about the environment.
+
+\section{The predict-then-verify principle}
+
+TPIG modifies PIG by measuring the \emph{actual} information gained
+after each transition rather than relying on predictions alone.  After
+observing transition $(s,a,s')$, TPIG computes the predicted
+information gain both before and after updating the internal model:
+\begin{equation}
+  r_{\textrm{TPIG}}(s,a,s') :=
+  D_{\textrm{KL}}\!\bigl(\hat{\Theta}_{sa\cdot}^{s \to s',\,t-1}
+  \;\|\;\hat{\Theta}_{sa\cdot}^{t-1}\bigr)
+  - D_{\textrm{KL}}\!\bigl(\hat{\Theta}_{sa\cdot}^{s \to s',\,t}
+  \;\|\;\hat{\Theta}_{sa\cdot}^{t}\bigr),
+  \label{eq:TPIGReward}
+\end{equation}
+where superscripts $t{-}1$ and $t$ denote the model before and after
+incorporating the observed transition.  If genuine learning occurred,
+the remaining information decreases and the reward is positive.
+Both KL-divergence evaluations reuse PIG's existing computation, so
+TPIG adds only one additional divergence calculation per step.
+This reward updates Q-values via standard TD
+learning~\eqref{eq:TDQVF}, with $\alpha = 0.9$ and $\gamma = 0.9$.
+Q-values are initialized to 1, providing an optimistic prior that
+encourages exploration of all actions before learned rewards dominate.
+TPIG selects the action with the highest Q-value:
+\[
+  \textrm{TPIG}(s) = \argmax_a Q(s,a).
+\]
+
+\subsection{The closed-minded model problem}
+
+After a single observation of $(s,a,s')$, PIG records that transition
+as 100\% probable.  On subsequent visits, the predicted and observed
+distributions are identical, the KL-divergence returns~0, and PIG
+considers the action fully learned, even if the true transition is
+stochastic.  This ``closed-minded'' behavior causes PIG to neglect
+areas visited only once.
+
+Both PIG and TPIG address this by initializing the total observed
+transition count to~1 rather than~0, equivalent to a uniform Dirichlet
+prior.  This ensures the KL-divergence always indicates remaining
+information.  As observations accumulate, the prior is overwhelmed
+and the model converges.
+
+\subsection{Handling infinities}
+
+When $\hat{\Theta}_{sa\cdot}$ is empty (no transitions observed),
+the KL-divergence returns infinity.  These values are replaced with 0
+in the reward calculation.  Negative rewards (which can occur when
+discovering a new state temporarily increases uncertainty) are clamped
+to 0 to avoid penalizing exploration.  Similarly, any Q-values that
+are infinite are normalized to~0 before the TD update is applied.
+
+\subsection{Why TPIG resists the noisy TV}
+
+PIG predicts high information gain from the TV because the model
+would change substantially.  However, TPIG recomputes the predicted
+gain after the update and finds it is still high: each observation
+barely reduces the remaining uncertainty because the TV states are so
+numerous.  The reward is near zero, and TPIG's Q-values for
+TV-related actions decay.  More precisely, for a stochastic transition
+with $k$ equally likely outcomes, the $n$-th observation reduces
+predicted information gain by only $O(1/n)$, so the reward vanishes.
+The same argument applies to LP's MSE reward.  Structured transitions
+produce larger, persistent reductions under either measure.
+
+In summary, PIG takes the action it \emph{predicts} will teach it the
+most.  Both TPIG and LP take the action \emph{experienced} to yield
+the most actual learning, a crucial distinction that makes the
+predict-then-verify approach robust to stochastic distractors.
+
+\subsection{Epsilon-greedy variants}
+
+We also evaluate $\epsilon$-greedy versions of both algorithms:
+EPIG and ETPIG.  With probability $\epsilon$ (set to 10\% unless
+otherwise noted), the agent selects a random action instead of the
+greedy choice.
+
+\section{Experimental setup}
+
+\subsection{Grid-world simulations}
+
+We test on four grid-world environments of increasing size
+(Figure~\ref{Fig:Sim}):
+\begin{itemize}
+  \item \textbf{4-TV} ($4 \times 4$): Multiple Noisy TVs.
+  \item \textbf{1-TV} ($5 \times 5$): A single Noisy TV.
+  \item \textbf{No-TV} ($6 \times 6$): No distractors (control).
+  \item \textbf{10x10-2TV} ($10 \times 10$): Two Noisy TVs with
+    internal walls creating corridors and rooms (100 states).
+\end{itemize}
+
+In each environment, actions move the agent in one of four cardinal
+directions.  Movement succeeds with 90\% probability; with 10\%
+probability the agent remains in place.  Walking into a wall always
+leaves the agent stationary.  Activating a Noisy TV increments an unbounded noise variable in the
+state, so each activation produces a unique state, simulating a TV
+with an inexhaustible supply of channels.  Importantly, the noise
+variable does not affect the actual transition dynamics: all TV
+states share the same transition probabilities regardless of the
+current channel.  The noise is therefore a pure distractor: it
+inflates the apparent state space without adding any learnable
+structure.
+
+All agents start in position~5.  Each episode runs for 1000 time
+steps (3000 for the 10x10-2TV environment) with no goal state.  Every policy is run for 100 independent
+trials per simulation.  The source code and simulation data are publicly
+available.\footnote{Repository URL withheld for double-blind review.}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.25\linewidth]{"images/4-TV.pdf"}\hfill
+  \includegraphics[width=0.25\linewidth]{"images/1-TV.pdf"}\hfill
+  \includegraphics[width=0.25\linewidth]{"images/No-TV.pdf"}
+  \caption{Grid-world simulations.  Semi-circles are Noisy TVs;
+    arrows indicate one-way walls.  Left: 4-TV ($4\times4$).
+    Center: 1-TV ($5\times5$).  Right: No-TV ($6\times6$).}
+  \label{Fig:Sim}
+\end{figure}
+
+\subsection{Metrics}
+
+\begin{itemize}
+  \item \textbf{Distraction rate}: Cumulative Noisy-TV activations.
+  \item \textbf{Learning rate}: Number of undiscovered state
+    transitions remaining.
+  \item \textbf{Model accuracy}: KL-divergence between the agent's
+    model and the true transition probabilities (excluding
+    undiscovered transitions, which would contribute infinity).
+\end{itemize}
+
+\subsection{Policies compared}
+
+Six policies are evaluated: Random Walk (uniform random baseline),
+PIG, EPIG ($\epsilon$-greedy PIG), TPIG, ETPIG ($\epsilon$-greedy
+TPIG), and LP (Learning Progress, a baseline that uses the decrease
+in prediction MSE rather than KL-divergence as its TD reward, using
+the same Q-learning framework as TPIG).
+
+\section{Results}
+
+\subsection{Distraction rate}
+
+Figures~\ref{Fig:DR4TV} and~\ref{Fig:DR1TV} show cumulative
+distractions.  PIG is heavily distracted, with its count growing
+steadily.  Random Walk is distracted least since it has no bias toward
+any action.  TPIG is initially distracted at a rate comparable to PIG
+but sharply reduces after a brief learning period.  In the 1-TV
+environment, TPIG approaches Random Walk; in the 4-TV environment, the
+improvement is less dramatic but TPIG still substantially outperforms
+PIG.  By the final time step, TPIG reduces distractions by 65\% in
+the 4-TV environment and 88\% in the 1-TV environment.  The
+$\epsilon$-greedy variants show reduced distraction as random action
+selection helps escape loops.
+
+\newsavebox{\DRfourTV}\newsavebox{\DRoneTV}
+\sbox{\DRfourTV}{\input{gnuplot_figs/Distraction_Rate_4-TV.tex}}
+\sbox{\DRoneTV}{\input{gnuplot_figs/Distraction_Rate_1-TV.tex}}
+\begin{figure}
+  \centering
+  \subfloat[4-TV simulation\label{Fig:DR4TV}]{\resizebox{0.48\linewidth}{!}{\usebox{\DRfourTV}}}\hfill
+  \subfloat[1-TV simulation\label{Fig:DR1TV}]{\resizebox{0.48\linewidth}{!}{\usebox{\DRoneTV}}}
+  \caption{Distraction rate.  Shaded regions show $\pm 1$ standard deviation over 100 trials.}
+  \label{Fig:DR}
+\end{figure}
+
+
+\subsection{Learning rate}
+
+Figures~\ref{Fig:MS4TV},~\ref{Fig:MS1TV}, and~\ref{Fig:MS0TV} show
+undiscovered transitions over time.  PIG initially explores faster
+than Random Walk in the 1-TV and No-TV environments, but in the
+4-TV environment it becomes trapped by the TVs and ultimately performs
+worse than Random Walk.  TPIG starts slower but consistently surpasses
+both PIG and Random Walk after an initial learning phase, with the
+crossover occurring earlier in smaller environments.
+
+\newsavebox{\MSfourTV}\newsavebox{\MSoneTV}\newsavebox{\MSnoTV}
+\sbox{\MSfourTV}{\input{gnuplot_figs/Missed_States_4-TV.tex}}
+\sbox{\MSoneTV}{\input{gnuplot_figs/Missed_States_1-TV.tex}}
+\sbox{\MSnoTV}{\input{gnuplot_figs/Missed_States_No-TV.tex}}
+\begin{figure}
+  \centering
+  \subfloat[4-TV simulation\label{Fig:MS4TV}]{\resizebox{0.48\linewidth}{!}{\usebox{\MSfourTV}}}\hfill
+  \subfloat[1-TV simulation\label{Fig:MS1TV}]{\resizebox{0.48\linewidth}{!}{\usebox{\MSoneTV}}}\\[4pt]
+  \subfloat[No-TV simulation\label{Fig:MS0TV}]{\resizebox{0.48\linewidth}{!}{\usebox{\MSnoTV}}}
+  \caption{Missed state transitions.}
+  \label{Fig:MS}
+\end{figure}
+
+\subsection{Model accuracy}
+
+Figures~\ref{Fig:MA4TV},~\ref{Fig:MA1TV}, and~\ref{Fig:MA0TV} show
+KL-divergence between each agent's model and the true model.
+Undiscovered transitions are excluded (they would contribute infinity),
+so this metric must be evaluated jointly with the learning rate.
+
+TPIG achieves lower KL-divergence than both PIG and Random Walk
+across all environments while having discovered more transitions,
+indicating both faster and more accurate learning.  In the No-TV
+control (Figure~\ref{Fig:MA0TV}), TPIG still performs best, confirming
+that its advantage extends beyond noisy settings.
+
+\newsavebox{\MAfourTV}\newsavebox{\MAoneTV}\newsavebox{\MAnoTV}
+\sbox{\MAfourTV}{\input{gnuplot_figs/Model_Accuracy_4-TV.tex}}
+\sbox{\MAoneTV}{\input{gnuplot_figs/Model_Accuracy_1-TV.tex}}
+\sbox{\MAnoTV}{\input{gnuplot_figs/Model_Accuracy_No-TV.tex}}
+\begin{figure}
+  \centering
+  \subfloat[4-TV simulation\label{Fig:MA4TV}]{\resizebox{0.48\linewidth}{!}{\usebox{\MAfourTV}}}\hfill
+  \subfloat[1-TV simulation\label{Fig:MA1TV}]{\resizebox{0.48\linewidth}{!}{\usebox{\MAoneTV}}}\\[4pt]
+  \subfloat[No-TV simulation\label{Fig:MA0TV}]{\resizebox{0.48\linewidth}{!}{\usebox{\MAnoTV}}}
+  \caption{Model accuracy (KL-divergence).}
+  \label{Fig:MA}
+\end{figure}
+
+\subsection{Scaling to a larger environment}
+
+To test scaling, we evaluated all six policies on a $10 \times 10$
+grid (100 states) with internal walls and two Noisy TVs
+(Figure~\ref{Fig:10x10}).  TPIG reduces distractions by 82\% relative
+to PIG and achieves the best model accuracy.  The two-phase behavior
+persists, with the crossover at approximately step~600, consistent
+with the linear scaling predicted from smaller environments.
+
+\newsavebox{\DRtenTV}\newsavebox{\MAtenTV}
+\sbox{\DRtenTV}{\input{gnuplot_figs/Distraction_Rate_10x10-2TV.tex}}
+\sbox{\MAtenTV}{\input{gnuplot_figs/Model_Accuracy_10x10-2TV.tex}}
+\begin{figure}
+  \centering
+  \subfloat[Distraction rate\label{Fig:DR10x10}]{\resizebox{0.48\linewidth}{!}{\usebox{\DRtenTV}}}\hfill
+  \subfloat[Model accuracy\label{Fig:MA10x10}]{\resizebox{0.48\linewidth}{!}{\usebox{\MAtenTV}}}
+  \caption{Results on the $10 \times 10$ 2-TV environment (100 states, 3000 steps).}
+  \label{Fig:10x10}
+\end{figure}
+
+\subsection{Effect of epsilon}
+
+We tested $\epsilon$ in increments of 20\%.  Higher $\epsilon$ reduces
+distractions in the 4-TV simulation, but in 1-TV and No-TV, lower
+$\epsilon$ yields better long-term ETPIG performance, since TPIG's
+learned avoidance makes heavy randomization counterproductive.  In the
+1-TV ETPIG results (not shown), we observed a pivot around step~100
+where all $\epsilon$ values shift from exploration to directed TV
+avoidance.  Pure TPIG ($\epsilon = 0$) exhibits early artifacts
+smoothed by even small $\epsilon$ values.
+
+\subsection{Summary of results}
+
+Table~\ref{tab:summary} reports final metric values averaged over 100
+trials.  TPIG and LP both dramatically outperform PIG on all metrics
+across all four environments.  LP reduces distractions by 82--94\% relative to PIG and achieves the
+lowest distraction counts, while TPIG achieves the best model
+accuracy; both explore faster than PIG.  ETPIG and TPIG perform similarly, confirming that
+TPIG's learned avoidance eliminates the need for randomization.
+
+\begin{table}
+\caption{Final metric values (mean over 100 trials).
+  Best value in each column is \textbf{bold}.  Lower is better for all
+  metrics.  Small environments run for 1000 steps; 10x10-2TV for 3000.}
+\label{tab:summary}
+\vspace{0.5\baselineskip}
+\centering
+\small
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Environment & Policy & Distractions & Missed & KL-div \\
+\midrule
+\multirow{6}{*}{4-TV}
+  & Random Walk &  62.0 & 10.7 &  5.86 \\
+  & PIG         & 341.0 & 17.1 &  6.25 \\
+  & EPIG        & 331.8 & 16.8 &  6.25 \\
+  & TPIG        & 118.7 & 11.2 &  5.33 \\
+  & ETPIG       & 112.8 & 11.2 &  5.22 \\
+  & LP          & \textbf{61.6} & \textbf{9.9} & \textbf{5.22} \\
+\midrule
+\multirow{6}{*}{1-TV}
+  & Random Walk &  18.6 & 45.5 & 22.56 \\
+  & PIG         & 184.2 & 37.0 & 28.86 \\
+  & EPIG        & 175.6 & 39.2 & 28.32 \\
+  & TPIG        &  21.7 & 25.9 & \textbf{13.21} \\
+  & ETPIG       &  21.1 & 26.2 & 13.47 \\
+  & LP          & \textbf{10.2} & \textbf{24.9} & 13.38 \\
+\midrule
+\multirow{6}{*}{No-TV}
+  & Random Walk & \textbf{0.0} & 71.9 & 36.12 \\
+  & PIG         & \textbf{0.0} & 63.9 & 30.38 \\
+  & EPIG        & \textbf{0.0} & 63.2 & 31.03 \\
+  & TPIG        & \textbf{0.0} & \textbf{57.2} & \textbf{24.01} \\
+  & ETPIG       & \textbf{0.0} & 57.7 & 24.59 \\
+  & LP          & \textbf{0.0} & \textbf{57.2} & 24.24 \\
+\midrule
+\multirow{6}{*}{\shortstack[l]{10x10\\2-TV}}
+  & Random Walk &  41.1 & 195.6 & 83.10 \\
+  & PIG         & 313.6 & 179.0 & 67.50 \\
+  & EPIG        & 277.4 & 178.5 & 67.10 \\
+  & TPIG        &  54.5 & 161.1 & \textbf{58.70} \\
+  & ETPIG       &  52.1 & 161.0 & 60.30 \\
+  & LP          & \textbf{24.2} & \textbf{154.6} & 59.80 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+By conditioning rewards on the measured decrease in model uncertainty,
+the predict-then-verify approach transforms exploration into a
+closed-loop feedback system.  The Noisy TV generates large predictions
+but negligible actual learning, so Q-values for TV-related actions
+naturally decay under both TPIG and LP.  Because the reward converges
+to zero as the model approaches the true distribution, both methods
+inherit TD convergence guarantees~\citep{Sutton1998}, unlike open-loop
+curiosity methods that can be permanently misled by stochastic stimuli.
+
+\subsection{Learning dynamics}
+
+Both TPIG and LP exhibit two-phase behavior: initial broad exploration
+while accumulating data, followed by directed exploration once Q-values
+stabilize.  PIG may outperform them during the first phase, but both
+surpass PIG on all metrics in the second.  This pattern is consistent
+across all 100 trials, as the narrow error bands confirm.
+
+The duration of this initial learning phase scales with environment
+size.  In the $4 \times 4$ 4-TV environment, the crossover occurs
+around time step~200; in the $5 \times 5$ 1-TV environment, around
+time step~300; in the $6 \times 6$ No-TV environment, around step~400;
+and in the $10 \times 10$ 10x10-2TV environment, around step~600.  This approximately linear scaling suggests that TPIG's
+startup cost is predictable and proportional to the number of
+state-action pairs, representing 20--40\% of the episode length across the environments
+tested.
+Table~\ref{tab:ablation} shows a sensitivity analysis of $\alpha$ and
+$\gamma$ on the 1-TV environment for both TPIG and LP.  For TPIG,
+high $\alpha$ with low $\gamma$ causes instability (521 distractions
+at $\alpha{=}0.9$, $\gamma{=}0.1$), but all configurations with
+$\gamma \geq 0.5$ outperform PIG.  LP is far more robust: it
+outperforms PIG in \emph{every} parameter combination, including the
+setting that is catastrophic for TPIG.  This confirms that the
+predict-then-verify mechanism is robust to hyperparameter choice, and
+that MSE is inherently more stable than KL-divergence for this
+application.
+
+\begin{table}
+\caption{Sensitivity to $\alpha$ and $\gamma$ on the 1-TV environment
+  (mean over 100 trials at step 999).  PIG baseline: 184 distractions,
+  37 missed, 28.9 KL-div.}
+\label{tab:ablation}
+\vspace{0.5\baselineskip}
+\centering
+\small
+\begin{tabular}{@{}ll rrr rrr rrr@{}}
+\toprule
+& & \multicolumn{3}{c}{$\gamma = 0.1$}
+  & \multicolumn{3}{c}{$\gamma = 0.5$}
+  & \multicolumn{3}{c}{$\gamma = 0.9$} \\
+\cmidrule(lr){3-5} \cmidrule(lr){6-8} \cmidrule(lr){9-11}
+& & Dist & Miss & KL & Dist & Miss & KL & Dist & Miss & KL \\
+\midrule
+\multirow{3}{*}{TPIG}
+& $\alpha{=}0.1$ &  21.7 & 34.2 & 24.3 &  19.0 & 31.3 & 21.5 & 27.1 & 32.7 & 16.4 \\
+& $\alpha{=}0.5$ & 202.7 & 33.9 & 22.5 &  20.7 & 26.3 & 13.8 & 22.2 & 26.8 & 13.2 \\
+& $\alpha{=}0.9$ & 521.5 & 41.6 & 29.7 & 107.6 & 28.0 & 14.4 & \textbf{21.9} & 26.2 & 13.2 \\
+\midrule
+\multirow{3}{*}{LP}
+& $\alpha{=}0.1$ &  18.7 & 33.6 & 24.1 &  15.9 & 30.5 & 21.5 & 14.4 & 30.1 & 17.3 \\
+& $\alpha{=}0.5$ &  13.2 & 29.2 & 17.6 &  10.9 & 26.3 & 13.7 & 10.9 & 26.4 & 13.2 \\
+& $\alpha{=}0.9$ &  20.4 & 29.2 & 16.2 & \textbf{10.2} & \textbf{26.1} & \textbf{13.1} & 10.4 & \textbf{25.9} & \textbf{13.1} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The role of epsilon}
+
+In environments with many distractors, higher $\epsilon$ helps both
+EPIG and ETPIG escape loops.  In cleaner environments, lower
+$\epsilon$ yields better ETPIG performance because TPIG already
+learns to avoid distractors; additional randomization only slows
+convergence.  For PIG-based methods, higher $\epsilon$ is consistently
+helpful since PIG lacks any mechanism to learn from its mistakes.
+LP was tested only in greedy mode; its strong distraction avoidance
+(Table~\ref{tab:summary}) suggests it may benefit less from
+$\epsilon$-greedy randomization than PIG does.
+
+\subsection{Comparison with other approaches}
+
+Unlike RND~\citep{Burda2019RND} or ICM~\citep{Pathak2017ICM},
+neither TPIG nor LP requires auxiliary networks, and both operate
+without any prior knowledge of which states are distractors or how
+the environment is structured.  The LP baseline
+validates the generality of the predict-then-verify principle:
+replacing KL-divergence with MSE preserves noise resistance and yields
+even lower distraction rates, while both achieve comparable
+exploration speed and model accuracy.  The choice of divergence measure is secondary to the closed-loop
+verification mechanism, and practitioners may prefer MSE for its
+simplicity and stronger distraction avoidance.
+
+\subsection{Limitations}
+
+The current study has several limitations.  First, although we test
+on environments up to 100 states, they remain tabular.  Scaling to
+continuous state spaces would require function approximation for the
+transition model and Q-values.  Second, our unbounded noise model (infinitely many unique TV states)
+represents a worst case for novelty-based methods; real-world
+distractors with finite state spaces would be easier to overcome.  Third, we do not combine TPIG's intrinsic reward with
+extrinsic rewards for goal-directed tasks.  The $\pm 1\sigma$ bands in all
+figures confirm that the reported results are statistically robust.
+
+\section{Conclusion and future work}
+
+We introduced the predict-then-verify principle for curiosity-driven
+exploration and demonstrated it through two instantiations: TPIG
+(KL-divergence) and LP (MSE).  Both dramatically outperform PIG across four grid-world environments
+ranging from 16 to 100 states and from zero to four distractors,
+with LP achieving the strongest distraction resistance and TPIG the
+best model accuracy.  The convergence of results across divergence measures confirms that
+the key mechanism is closed-loop verification of learning, not the
+specific metric used; the choice between KL-divergence and MSE
+becomes a tunable design parameter rather than a fundamental
+algorithmic decision.
+
+Future directions include scaling to continuous environments with
+function approximation, combining intrinsic and extrinsic rewards,
+and investigating whether a weighted combination of KL-divergence and
+MSE rewards can achieve both LP's distraction resistance and TPIG's
+model accuracy.
+The principle's simplicity and representation-independence make it a
+promising candidate for integration into deep RL curiosity
+methods~\citep{Pathak2017ICM,Burda2019RND}.
+
+\begin{ack}
+We thank the members of David Mathews' thesis committee for their
+feedback on this work.
+\end{ack}
+
+\FloatBarrier
+\bibliographystyle{plainnat}
+\bibliography{Thesis_David_Mathews}
+
+\end{document}

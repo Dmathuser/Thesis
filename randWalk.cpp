@@ -4,7 +4,7 @@
 RandWalk::RandWalk(int seed,int numStates,int numActions):Policy(numStates,numActions)
 {
 	seed = seed;
-	srand(seed); //Might be slow...
+	rand_seed = seed; //Might be slow...
 	//Initialize();
 }
 
@@ -28,7 +28,7 @@ void RandWalk::Initialize()
 Action RandWalk::getAction(State s)
 {
 	Action a;
-	a = Action(rand()%ACTION_SIZE);
+	a = Action(rand_r(&rand_seed)%ACTION_SIZE);
 
 	return a;
 }

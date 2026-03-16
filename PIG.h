@@ -6,6 +6,7 @@ class PIG_alg : public Policy {
 	private:
 	// State transitionCount[numStates][ACTION_SIZE][???]; // IS THETA_HAT
 	int seed = 0;
+	unsigned int rand_seed = 0;
 	bool DEBUG = false;
 	double KL_D(StateTransitionVector* Theta, StateTransitionVector* ThetaHat);
 	double GetProbability(StateTransition sas);
