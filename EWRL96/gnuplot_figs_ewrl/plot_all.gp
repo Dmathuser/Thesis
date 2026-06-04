@@ -1,6 +1,6 @@
-# Generate all 9 figures for the FLAIRS paper.
+# Generate all 12 figures for the EWRL paper.
 # Usage: gnuplot plot_all.gp
-# Then run inline_gnuplot_figs.py to embed into FLAIRS.tex
+# EWRL.tex loads each output .tex file via \input{}; no inlining step.
 
 DATADIR = "../../experiment_summary"
 

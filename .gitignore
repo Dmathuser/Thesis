@@ -1,6 +1,9 @@
 # Emacs autobackup files
 *~
 
+# Make stamp files
+.gnuplot.stamp
+
 # Prerequisites
 *.d
 
