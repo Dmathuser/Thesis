@@ -66,9 +66,11 @@ bool SimLogger::log()
 		//std::cout << "Current Time is: " << logs.distractionRate.size();
 		//stopLog();
 	//calculate KL-divergence of current model to true model
-	double policyAccuracy = getPolicyAccuracy();
+	//std::cout << "Policy Accuracy" << std::endl;
+	double policyAccuracy = getNPolicyAccuracy();
 
-	int infCount = getPolicyInfCount();
+	//std::cout << "Policy InfCount" << std::endl;
+	int infCount = getNPolicyInfCount();
 	logs.Infinity_Count.push_back(infCount);
 
 	//logs.modelAccuracy.push_back(getPolicyAccuracy());
@@ -114,9 +116,49 @@ bool SimLogger::printSimLogs(std::string outFileName)
 }
 bool SimLogger::isPolicyOptimal()
 {
-	if (getPolicyInfCount() == 0)
+	if (getNPolicyInfCount() == 0)
 		return true;
 	return false;
+}
+double SimLogger::getNPolicyAccuracy()
+{
+	double MissingInformation = 0;
+	int numStates = policy->getNumStates();
+	int ***theta = sim->getTransitions();
+	StateTransitionVector **thetahat = policy->getTransitionCount();
+	if (thetahat == NULL)
+	{
+		//std::cout << "thetaHat is NULL" << std::endl;
+		std::unordered_map<unsigned long, StateTransitionVector> nthetahat = policy->getTransitionMemory();
+		//std::cout << "got nthetahat" << std::endl;
+		for (auto it = nthetahat.begin(); it != nthetahat.end(); ++it)
+		{
+			//std::cout << "Auto loop:" << std::endl;
+			State s = it->second.s;
+			int a = it->second.a;
+			//std::cout << "Iterator:" << it->first << ", " << it->second.totalCount << std::endl;
+			unsigned long hash = policy->hash_sa(s,a);
+			//std::cout << "Hash: " << hash << std::endl;
+			//std::cout << "KLD: a=" << a << ", state=" << s.StateId << std::endl;
+			//std::cout << "State: state={" << s.StateId << ", " << s.Noise << "}, a=" << a << std::endl;
+			double KL_div = KL_D(theta[s.StateId][a], &nthetahat[hash]);
+				if (!isnan(KL_div) && !isinf(KL_div))
+					MissingInformation += KL_div;
+			//std::cout << "End loop:" << std::endl;
+		}
+	}
+	else
+	{
+		//std::cout << "thetaHat is: " << thetahat << std::endl;
+		for (int s = 0; s < numStates; s++)
+			for (int a = 0; a < ACTION_SIZE; a++)
+			{
+				double KL_div = KL_D(theta[s][a], &thetahat[s][a]);
+				if (!isnan(KL_div) && !isinf(KL_div))
+					MissingInformation += KL_div;
+			}
+	}
+	return MissingInformation;
 }
 
 double SimLogger::getPolicyAccuracy()
@@ -149,6 +191,31 @@ double SimLogger::getPolicyAccuracy()
 	}
 	return MissingInformation;
 }
+int SimLogger::getNPolicyInfCount()
+{
+	int infCount = 0;
+	int numStates = policy->getNumStates();
+	int ***theta = sim->getTransitions();
+	StateTransitionVector **thetahat = policy->getTransitionCount();
+	if (thetahat == NULL)
+	{
+		std::unordered_map<unsigned long, StateTransitionVector> nthetahat = policy->getTransitionMemory();
+		for (auto it = nthetahat.begin(); it != nthetahat.end(); ++it)
+		{
+			State s = it->second.s;
+			int a = it->second.a;
+			infCount += KL_D_InfCount(theta[s.StateId][a], &nthetahat[policy->hash_sa(s,a)]);
+		}
+	}
+	else
+	{
+		for (int s = 0; s < numStates; s++)
+			for (int a = 0; a < ACTION_SIZE; a++)
+				infCount += KL_D_InfCount(theta[s][a], &thetahat[s][a]);
+	}
+	return infCount;
+}
+
 
 int SimLogger::getPolicyInfCount()
 {

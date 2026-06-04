@@ -7,12 +7,20 @@
 #include <queue>
 #include "simulation.h"
 #include "simLogger.h"
+
 #include "randWalk.h"
 #include "PIG.h"
 #include "EPIG.h"
 #include "TPIG.h"
 #include "ETPIG.h"
 #include "LP.h"
+
+#include "NrandWalk.h"
+#include "NPIG.h"
+#include "NEPIG.h"
+#include "NTPIG.h"
+#include "NETPIG.h"
+#include "NLP.h"
 
 using namespace std;
 
@@ -48,6 +56,12 @@ void runTrial(const Job &job)
     TPIG_alg tpigPol(job.seed, nS, nA);
     ETPIG_alg etpigPol(job.seed, job.epsilon, nS, nA);
     LP_alg lpPol(job.seed, nS, nA);
+    NRandWalk NrandPol(job.seed, nS, nA);
+    NPIG_alg NpigPol(job.seed, nS, nA);
+    NEPIG_alg NepigPol(job.seed, job.epsilon, nS, nA);
+    NTPIG_alg NtpigPol(job.seed, nS, nA);
+    NETPIG_alg NetpigPol(job.seed, job.epsilon, nS, nA);
+    NLP_alg NlpPol(job.seed, nS, nA);
 
     Policy *pol;
     pol = NULL;
@@ -63,6 +77,18 @@ void runTrial(const Job &job)
         pol = &etpigPol;
     else if (job.policy == "LP")
         pol = &lpPol;
+    else if (job.policy == "NRandWalk")
+        pol = &NrandPol;
+    else if (job.policy == "NPIG")
+        pol = &NpigPol;
+    else if (job.policy == "NEPIG")
+        pol = &NepigPol;
+    else if (job.policy == "NTPIG")
+        pol = &NtpigPol;
+    else if (job.policy == "NETPIG")
+        pol = &NetpigPol;
+    else if (job.policy == "NLP")
+        pol = &NlpPol;
 
     if (pol == NULL)
         return;
@@ -144,9 +170,11 @@ int main(int argc, char **argv)
         {"NoTvSim.sim",              "NoTV",      1000, 5},
         {"Simulation_2TV_10x10.sim", "10x10_2TV", 3000, 5},
     };
-    string policies[] = {"RandWalk", "PIG", "EPIG", "TPIG", "ETPIG", "LP"};
-    int numSims = 4;
-    int numPolicies = 6;
+    string policies[] = {"NRandWalk", "NPIG", "NEPIG", "NTPIG", "NETPIG", "NLP", "RandWalk", "PIG", "EPIG", "TPIG", "ETPIG", "LP"};
+    //string policies[] = {"NPIG", "RandWalk", "PIG", "EPIG", "TPIG", "ETPIG", "LP"}; //DON'T WORK
+    //string policies[] = {"NLP", "RandWalk", "PIG", "EPIG", "TPIG", "ETPIG", "LP"};
+    int numSims = 3;
+    int numPolicies = 12;
     int numTrials = 100;
     int epsilon = 10;
     int numThreads = 16;

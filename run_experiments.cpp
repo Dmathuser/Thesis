@@ -9,13 +9,13 @@
 #include "EPIG.h"
 #include "TPIG.h"
 #include "ETPIG.h"
+#include "NTPIG.h"
 
 using namespace std;
 
 StateTransition getSAS(State s, Action a, Simulation *sim);
 
-void runTrial(string simFile, string outDir, string policy,
-              int episodeLength, int epsilon, int seed)
+void runTrial(string simFile, string outDir, string policy, int episodeLength, int epsilon, int seed)
 {
     Simulation sim = Simulation(simFile, seed);
     string outFile;
@@ -31,6 +31,7 @@ void runTrial(string simFile, string outDir, string policy,
     EPIG_alg epigPol(seed, epsilon, nS, nA);
     TPIG_alg tpigPol(seed, nS, nA);
     ETPIG_alg etpigPol(seed, epsilon, nS, nA);
+    NTPIG_alg ntpigPol(seed, nS, nA);
 
     pol = NULL;
     if (policy == "RandWalk")
@@ -43,6 +44,8 @@ void runTrial(string simFile, string outDir, string policy,
         pol = &tpigPol;
     else if (policy == "ETPIG")
         pol = &etpigPol;
+    else if (policy == "NTPIG")
+        pol = &ntpigPol;
 
     if (pol == NULL) {
         cerr << "Unknown policy: " << policy << endl;
@@ -68,6 +71,7 @@ void runTrial(string simFile, string outDir, string policy,
     }
     logger.stopLog();
     logger.printSimLogs(outFile);
+    // cout << outFile << endl;
 }
 
 StateTransition getSAS(State s, Action a, Simulation *sim)
@@ -87,7 +91,8 @@ int main(int argc, char **argv)
 {
     string simFiles[] = {"Simulation_4TV.sim", "Simulation_1TV.sim", "NoTvSim.sim"};
     string simNames[] = {"4TV", "1TV", "NoTV"};
-    string policies[] = {"RandWalk", "PIG", "EPIG", "TPIG", "ETPIG"};
+    string policies[] = {"NRandWalk", "NPIG", "NEPIG", "NTPIG", "NETPIG", "RandWalk", "PIG", "EPIG", "TPIG", "ETPIG"};
+    // string policies[] = {"RandWalk", "PIG", "EPIG", "TPIG", "ETPIG"};
     int numSims = 3;
     int numPolicies = 5;
     int numTrials = 100;
@@ -111,8 +116,8 @@ int main(int argc, char **argv)
             for (trial = 0; trial < numTrials; trial++) {
                 if ((trial + 1) % 25 == 0)
                     cout << "  Trial " << trial + 1 << "/" << numTrials << endl;
-                runTrial(simFiles[si], dir, policies[pi],
-                         episodeLength, epsilon, trial);
+                // cout << "Experiment Start" << endl;
+                runTrial(simFiles[si], dir, policies[pi], episodeLength, epsilon, trial);
             }
         }
     }

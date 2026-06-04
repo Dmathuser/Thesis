@@ -28,7 +28,9 @@ class SimLogger {
 		double KL_D(int* Theta, StateTransitionVector* ThetaHat);
 		int KL_D_InfCount(int* Theta, StateTransitionVector* ThetaHat);
 		double getPolicyAccuracy();
+		double getNPolicyAccuracy();
 		int getPolicyInfCount();
+		int getNPolicyInfCount();
 		std::string SimulationName = "";
 	public:
 		SimLogger(Simulation *simulation, Policy *policy);

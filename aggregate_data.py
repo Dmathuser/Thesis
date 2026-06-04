@@ -12,7 +12,8 @@ OUT_DIR = "experiment_summary"
 
 SIMS = ["4TV", "1TV", "NoTV"]
 SIM_LABELS = {"4TV": "4-TV", "1TV": "1-TV", "NoTV": "No-TV"}
-POLICIES = ["RandWalk", "PIG", "EPIG", "TPIG", "ETPIG"]
+#POLICIES = ["RandWalk", "PIG", "EPIG", "TPIG", "ETPIG", "NTPIG"]
+POLICIES = ["NRandWalk", "NPIG", "NEPIG", "NTPIG", "NETPIG", "NLP"]
 
 COL_DISTRACTION = 1
 COL_MISSED = 2

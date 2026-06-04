@@ -5,7 +5,9 @@ LFLAGS=
 DEPENDFLAGS=-I. -M 
 DEFINES=
 
-OBJS=main.o simulation.o simLogger.o printSimPDF.o policy.o randWalk.o PIG.o EPIG.o TPIG.o ETPIG.o LP.o structs.o
+OBJS=main.o simulation.o simLogger.o printSimPDF.o policy.o \
+  randWalk.o PIG.o EPIG.o TPIG.o ETPIG.o LP.o structs.o \
+  NrandWalk.o NPIG.o NEPIG.o NTPIG.o NETPIG.o NLP.o
 
 EXEFILE=ThesisSim
 

@@ -77,3 +77,7 @@ void Policy::Update(StateTransition sas)
 	//increase counter for total number of observed transitions.
 	transitionCount[s][sas.a].totalCount += 1;
 }
+unsigned long Policy::hash_sa(State s, int action)
+	{
+		return (s.Noise << 16) + (s.StateId << 8) + (action);
+	}

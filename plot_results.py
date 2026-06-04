@@ -6,7 +6,7 @@ suitable for the FLAIRS paper.
 """
 
 import os
-import sys
+#import sys
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -17,20 +17,38 @@ OUT_DIR = "FLAIRS/images_errbar"
 
 SIMS = ["4TV", "1TV", "NoTV"]
 SIM_LABELS = {"4TV": "4-TV", "1TV": "1-TV", "NoTV": "No-TV"}
-POLICIES = ["RandWalk", "PIG", "EPIG", "TPIG", "ETPIG"]
+#POLICIES = ["RandWalk", "PIG", "EPIG", "TPIG", "ETPIG", "NTPIG"]
+#POLICIES = ["NRandWalk", "NEPIG", "NTPIG", "NETPIG", "NLP"]#, "NPIG"]
+POLICIES = ["NRandWalk", "NPIG", "NEPIG", "NTPIG", "NETPIG", "NLP"]
 POLICY_LABELS = {
     "RandWalk": "Random Walk",
     "PIG": "PIG",
     "EPIG": "EPIG",
     "TPIG": "TPIG",
-    "ETPIG": "ETPIG"
+    "ETPIG": "ETPIG",
+    "LP": "LP",
+    "NRandWalk": "NRandom Walk",
+    "NPIG": "NPIG",
+    "NEPIG": "NEPIG",
+    "NTPIG": "NTPIG",
+    "NETPIG": "NETPIG",
+    "NLP": "NLP"
 }
 POLICY_COLORS = {
     "RandWalk": "#1f77b4",
     "PIG": "#ff7f0e",
     "EPIG": "#2ca02c",
     "TPIG": "#d62728",
-    "ETPIG": "#9467bd"
+    "ETPIG": "#9467bd",
+    "LP": "#ff7f0e",
+    "NRandWalk": "#1f77b4",
+    "NPIG": "#ff7f0e",
+    "NEPIG": "#2ca02c",
+    "NTPIG": "#d62728",
+    "NETPIG": "#9467bd",
+    "NLP": "#111111"#,
+#    "NPIG": "#ff7f0e",
+#    "NTPIG": "#1fffb4"
 }
 
 # Column indices in the CSV (after the 3 header lines)

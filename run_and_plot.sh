@@ -19,7 +19,8 @@ echo ""
 echo "=== Step 2: Compiling experiment runner ==="
 g++ -Wall -I. -O2 -o run_experiments run_experiments.cpp \
     simulation.o simLogger.o printSimPDF.o policy.o \
-    randWalk.o PIG.o EPIG.o TPIG.o ETPIG.o structs.o
+    randWalk.o PIG.o EPIG.o TPIG.o ETPIG.o LP.o structs.o \
+    NrandWalk.o NPIG.o NEPIG.o NTPIG.o NETPIG.o NLP.o 
 echo "Compiled run_experiments"
 echo ""
 

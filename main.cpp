@@ -3,11 +3,20 @@
 #include <cstring>
 #include "simulation.h"
 #include "simLogger.h"
+
 #include "randWalk.h"
 #include "PIG.h"
 #include "EPIG.h"
 #include "TPIG.h"
 #include "ETPIG.h"
+#include "LP.h"
+
+#include "NrandWalk.h"
+#include "NPIG.h"
+#include "NEPIG.h"
+#include "NTPIG.h"
+#include "NETPIG.h"
+#include "NLP.h"
 
 using namespace std;
 
@@ -19,6 +28,15 @@ void RunEPIGSimulation(string simFile, string outFile, int episodeLength, int ep
 void RunRandSimulation(string simFile, string outFile, int episodeLength, int seed);
 void RunETPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed);
 void RunTPIGSimulation(string simFile, string outFile, int episodeLength, int seed);
+void RunLPSimulation(string simFile, string outFile, int episodeLength, int seed);
+
+void RunNRandSimulation(string simFile, string outFile, int episodeLength, int seed);
+void RunNPIGSimulation(string simFile, string outFile, int episodeLength, int seed);
+void RunNEPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed);
+void RunNTPIGSimulation(string simFile, string outFile, int episodeLength, int seed);
+void RunNETPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed);
+void RunNLPSimulation(string simFile, string outFile, int episodeLength, int seed);
+
 void TestSim(string filename);
 void TestPolicy(string filename, int seed);
 void printAction(Action a);
@@ -35,7 +53,9 @@ int main(int argc, char** argv)
 	// Initialize variables
 	int numEpochs = 1;
 	int numEpisodes = 100;
-	string simFile = "Simulation.sim";
+	string simFile = "Simulation_1TV.sim";
+	// string simFile = "Simulation_4TV.sim";
+	// string simFile = "NoTVSim.sim";
 	//string simFile = "TestSim.sim";
 	//string fileName = "SimulationData/EPIG_1.txt";
 	string TPIGfileName = "SimulationData/TPIG_1.txt";
@@ -43,6 +63,15 @@ int main(int argc, char** argv)
 	string EPIGfileName = "EpsilonData/EPIG_1.txt";
 	string PIGfileName = "SimulationData/PIG_1.txt";
 	string RandfileName = "SimulationData/Rand_1.txt";
+	string LPfileName = "SimulationData/LP_1.txt";
+	// string NTPIGfileName = "SimulationData/NTPIG_1.txt";
+	string NRandfileName = "experiment_data/NoTV/NRandwalk/NRandWalk.txt";
+	string NPIGfileName = "experiment_data/NoTV/NPIG/NPIG.txt";
+	string NEPIGfileName = "experiment_data/NoTV/NEPIG/NEPIG.txt";
+	string NTPIGfileName = "experiment_data/1TV/NTPIG/NTPIG.txt";
+	string NETPIGfileName = "experiment_data/1TV/NETPIG/NETPIG.txt";
+	string NLPfileName = "experiment_data/1TV/NLP/NLP.txt";
+
 	string outFile;
 	int episodeLength = 1000;
 	int seed = 0;
@@ -66,29 +95,55 @@ int main(int argc, char** argv)
 			outFile = SetOutputFileExtension(TPIGfileName, count);
 			RunTPIGSimulation(simFile, outFile, episodeLength, seed);
 			*/
+			//cout << "    Part 1.1: NTPIG" << endl;
+			//outFile = SetOutputFileExtension(NTPIGfileName, count);
+			//RunNTPIGSimulation(simFile, outFile, episodeLength, seed);
+
 
 			for (int epsilon = 0; epsilon <= 100; epsilon += 10)
 			{
 				cout << "  Epsilon = " << epsilon << endl;
-				cout << "    Part 2: ETPIG" << endl;
-				outFile = SetOutputFileExtension(ETPIGfileName, count, epsilon);
-				RunETPIGSimulation(simFile, outFile, episodeLength, epsilon, seed);
+				// cout << "    Part 2: ETPIG" << endl;
+				// outFile = SetOutputFileExtension(ETPIGfileName, count, epsilon);
+				// RunETPIGSimulation(simFile, outFile, episodeLength, epsilon, seed);
 
-				cout << "    Part 3: EPIG" << endl;
-				outFile = SetOutputFileExtension(EPIGfileName, count, epsilon);
-				RunEPIGSimulation(simFile, outFile, episodeLength, epsilon, seed);
+				//cout << "    Part 2.1: NETPIG" << endl;
+				//outFile = SetOutputFileExtension(NETPIGfileName, count);
+				//RunNETPIGSimulation(simFile, outFile, episodeLength, epsilon, seed);
+
+				// cout << "    Part 3: EPIG" << endl;
+				// outFile = SetOutputFileExtension(EPIGfileName, count, epsilon);
+				// RunEPIGSimulation(simFile, outFile, episodeLength, epsilon, seed);
+
+				//cout << "    Part 3.1: NEPIG" << endl;
+				//outFile = SetOutputFileExtension(NEPIGfileName, count);
+				//RunNEPIGSimulation(simFile, outFile, episodeLength, epsilon, seed);
+
 			}
 
-			/*	
-			cout << "    Part 4: PIG" << endl;
-			outFile = SetOutputFileExtension(PIGfileName, count);
-			RunPIGSimulation(simFile, outFile, episodeLength, seed);
+			// cout << "    Part 4: PIG" << endl;
+			// outFile = SetOutputFileExtension(PIGfileName, count);
+			// RunPIGSimulation(simFile, outFile, episodeLength, seed);
 
-			cout << "    Part 5: RandWalk" << endl;
-			outFile = SetOutputFileExtension(RandfileName, count);
-			RunRandSimulation(simFile, outFile, episodeLength, seed);
-			*/
+			cout << "    Part 4.1: NPIG" << endl;
+			outFile = SetOutputFileExtension(NPIGfileName, count);
+			RunNPIGSimulation(simFile, outFile, episodeLength, seed);
 
+			// cout << "    Part 5: RandWalk" << endl;
+			// outFile = SetOutputFileExtension(RandfileName, count);
+			// RunRandSimulation(simFile, outFile, episodeLength, seed);
+
+			//cout << "    Part 5.1: NRandWalk" << endl;
+			//outFile = SetOutputFileExtension(NRandfileName, count);
+			//RunNRandSimulation(simFile, outFile, episodeLength, seed);
+
+			// cout << "    Part 6: LP" << endl;
+			// outFile = SetOutputFileExtension(LPfileName, count);
+			// RunLPSimulation(simFile, outFile, episodeLength, seed);
+
+			//cout << "    Part 6.1: NLP" << endl;
+			//outFile = SetOutputFileExtension(NLPfileName, count);
+			//RunNLPSimulation(simFile, outFile, episodeLength, seed);
 			count += 1;
 		}
 
@@ -222,6 +277,34 @@ void RunEPIGSimulation(string simFile, string outFile, int episodeLength, int ep
 	logger.printSimLogs(outFile);
 }
 
+void RunNRandSimulation(string simFile, string outFile, int episodeLength, int seed)
+{
+	Simulation sim = Simulation(simFile, seed);
+	//Setup Logger
+	NRandWalk policy = NRandWalk(seed, sim.getNumStates(), sim.getNumActions());
+	SimLogger logger = SimLogger(&sim, &policy, simFile, sim.getSeed());
+
+	sim.setCurState(5); //Set starting state for agent in simulation
+	State s = {5};
+	Action a = UP;
+	StateTransition sas = {0};
+
+	logger.startLog();
+	for (int i = 0; i < episodeLength; i++)
+	{
+		logger.log();
+		a = policy.getAction(s);
+
+		sim.moveState(a);
+		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
+
+		policy.Update(sas);
+		s = sas.sPrime;
+	}
+	logger.stopLog();
+	logger.printSimLogs(outFile);
+}
+
 void RunRandSimulation(string simFile, string outFile, int episodeLength, int seed)
 {
 	Simulation sim = Simulation(simFile, seed);
@@ -255,6 +338,181 @@ void RunPIGSimulation(string simFile, string outFile, int episodeLength, int see
 	Simulation sim = Simulation(simFile, seed);
 	//Setup Logger
 	PIG_alg policy = PIG_alg(seed,sim.getNumStates(),sim.getNumActions());
+	SimLogger logger = SimLogger(&sim, &policy, simFile, sim.getSeed());
+
+	sim.setCurState(5); //Set starting state for agent in simulation
+	State s = {5};
+	Action a = UP;
+	StateTransition sas = {0};
+
+	logger.startLog();
+	for (int i = 0; i < episodeLength; i++)
+	{
+		logger.log();
+		a = policy.getAction(s);
+
+		sim.moveState(a);
+		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
+
+		policy.Update(sas);
+		s = sas.sPrime;
+	}
+	logger.stopLog();
+	logger.printSimLogs(outFile);
+}
+
+void RunNPIGSimulation(string simFile, string outFile, int episodeLength, int seed)
+{
+	Simulation sim = Simulation(simFile, seed);
+	//Setup Logger
+	NPIG_alg policy = NPIG_alg(seed,sim.getNumStates(),sim.getNumActions());
+	SimLogger logger = SimLogger(&sim, &policy, simFile, sim.getSeed());
+
+	sim.setCurState(5); //Set starting state for agent in simulation
+	State s = {5};
+	Action a = UP;
+	StateTransition sas = {0};
+
+	logger.startLog();
+	for (int i = 0; i < episodeLength; i++)
+	{
+		logger.log();
+		//std::cout << std::endl << "------- Main Get Action ------- " << std::endl;
+		a = policy.getAction(s);
+
+		sim.moveState(a);
+		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
+
+		//std::cout << "--------- Main Update --------- " << std::endl;
+		policy.Update(sas);
+		s = sas.sPrime;
+	}
+	logger.stopLog();
+	logger.printSimLogs(outFile);
+}
+void RunNEPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed)
+{
+	Simulation sim = Simulation(simFile, seed);
+	//Setup Logger
+	NEPIG_alg policy = NEPIG_alg(seed, epsilon, sim.getNumStates(),sim.getNumActions());
+	SimLogger logger = SimLogger(&sim, &policy, simFile, sim.getSeed());
+
+	sim.setCurState(5); //Set starting state for agent in simulation
+	State s = {5};
+	Action a = UP;
+	StateTransition sas = {0};
+
+	logger.startLog();
+	for (int i = 0; i < episodeLength; i++)
+	{
+		//std::cout << "-- Log" << std::endl;
+		logger.log();
+		//std::cout << "-- GetAction" << std::endl;
+		a = policy.getAction(s);
+
+		//std::cout << "-- MoveState" << std::endl;
+		sim.moveState(a);
+		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
+
+		//std::cout << "-- Update" << std::endl;
+		policy.Update(sas);
+		s = sas.sPrime;
+	}
+	logger.stopLog();
+	logger.printSimLogs(outFile);
+}
+void RunNTPIGSimulation(string simFile, string outFile, int episodeLength, int seed)
+{
+	Simulation sim = Simulation(simFile, seed);
+	//Setup Logger
+	NTPIG_alg policy = NTPIG_alg(seed,sim.getNumStates(),sim.getNumActions());
+	SimLogger logger = SimLogger(&sim, &policy, simFile, sim.getSeed());
+
+	sim.setCurState(5); //Set starting state for agent in simulation
+	State s = {5};
+	Action a = UP;
+	StateTransition sas = {0};
+
+	logger.startLog();
+	for (int i = 0; i < episodeLength; i++)
+	{
+		//std::cout << std::endl << "------- Main Log ------- " << std::endl;
+		logger.log();
+		//std::cout << std::endl << "------- Main Get Action ------- " << std::endl;
+		a = policy.getAction(s);
+
+		sim.moveState(a);
+		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
+
+		//std::cout << "--------- Main Update --------- " << std::endl;
+		policy.Update(sas);
+		s = sas.sPrime;
+	}
+	logger.stopLog();
+	logger.printSimLogs(outFile);
+}
+void RunNETPIGSimulation(string simFile, string outFile, int episodeLength, int epsilon, int seed)
+{
+	Simulation sim = Simulation(simFile, seed);
+	//Setup Logger
+	NETPIG_alg policy = NETPIG_alg(seed,epsilon,sim.getNumStates(),sim.getNumActions());
+	SimLogger logger = SimLogger(&sim, &policy, simFile, sim.getSeed());
+
+	sim.setCurState(5); //Set starting state for agent in simulation
+	State s = {5};
+	Action a = UP;
+	StateTransition sas = {0};
+
+	logger.startLog();
+	for (int i = 0; i < episodeLength; i++)
+	{
+		logger.log();
+		//std::cout << std::endl << "------- Main Get Action ------- " << std::endl;
+		a = policy.getAction(s);
+
+		sim.moveState(a);
+		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
+
+		//std::cout << "--------- Main Update --------- " << std::endl;
+		policy.Update(sas);
+		s = sas.sPrime;
+	}
+	logger.stopLog();
+	logger.printSimLogs(outFile);
+}
+void RunLPSimulation(string simFile, string outFile, int episodeLength, int seed)
+{
+	Simulation sim = Simulation(simFile, seed);
+	//Setup Logger
+	LP_alg policy = LP_alg(seed, sim.getNumStates(), sim.getNumActions());
+	SimLogger logger = SimLogger(&sim, &policy, simFile, sim.getSeed());
+
+	sim.setCurState(5); //Set starting state for agent in simulation
+	State s = {5};
+	Action a = UP;
+	StateTransition sas = {0};
+
+	logger.startLog();
+	for (int i = 0; i < episodeLength; i++)
+	{
+		logger.log();
+		a = policy.getAction(s);
+
+		sim.moveState(a);
+		sas = getSAS(s, a, &sim); //Data Leak? Look up returning structs.
+
+		policy.Update(sas);
+		s = sas.sPrime;
+	}
+	logger.stopLog();
+	logger.printSimLogs(outFile);
+}
+
+void RunNLPSimulation(string simFile, string outFile, int episodeLength, int seed)
+{
+	Simulation sim = Simulation(simFile, seed);
+	//Setup Logger
+	NLP_alg policy = NLP_alg(seed, sim.getNumStates(), sim.getNumActions());
 	SimLogger logger = SimLogger(&sim, &policy, simFile, sim.getSeed());
 
 	sim.setCurState(5); //Set starting state for agent in simulation
