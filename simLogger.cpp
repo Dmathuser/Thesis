@@ -200,12 +200,19 @@ int SimLogger::getNPolicyInfCount()
 	if (thetahat == NULL)
 	{
 		std::unordered_map<unsigned long, StateTransitionVector> nthetahat = policy->getTransitionMemory();
+		std::unordered_map<unsigned long, State> CalculatedStates; //Makes sure noise in map isn't double counted as a state.
 		for (auto it = nthetahat.begin(); it != nthetahat.end(); ++it)
 		{
 			State s = it->second.s;
 			int a = it->second.a;
-			infCount += KL_D_InfCount(theta[s.StateId][a], &nthetahat[policy->hash_sa(s,a)]);
+			State FuzzyState = {s.StateId, 0};
+			if (CalculatedStates.find(policy->hash_sa(FuzzyState,a)) == CalculatedStates.end())
+			{
+				infCount += KL_D_InfCount(theta[s.StateId][a], &nthetahat[policy->hash_sa(s,a)]);
+				copy_State(&FuzzyState, &CalculatedStates[policy->hash_sa(FuzzyState,a)]);
+			}
 		}
+		return (numStates * ACTION_SIZE) - CalculatedStates.size();
 	}
 	else
 	{
